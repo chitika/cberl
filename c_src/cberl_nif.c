@@ -164,6 +164,7 @@ NIF(cberl_nif_store)
     }
     switch(flags) {
         case 1:
+            value = (int *) malloc(sizeof(int));
             if (! enif_get_int(env, argv[4], (int*)value)) {
                 return enif_make_badarg(env);
             }               
@@ -173,7 +174,7 @@ NIF(cberl_nif_store)
             if (! enif_get_list_length(env, argv[4], &nbytes)) {
                 return enif_make_badarg(env);
             }
-            value = (char *) malloc(nbytes + 1);
+            value = (char *) malloc(nbytes);
             if (! enif_get_string(env, argv[4], value, nbytes + 1, ERL_NIF_LATIN1)) {
                 return enif_make_badarg(env);
             }
@@ -182,7 +183,8 @@ NIF(cberl_nif_store)
             if (! enif_inspect_iolist_as_binary(env, argv[4], &value_binary)) {
                 return enif_make_badarg(env);
             }
-            value = value_binary.data;
+            value = malloc(value_binary.size);
+            memcpy(value, value_binary.data, value_binary.size);
             nbytes = value_binary.size;
             break;
         default:
@@ -209,6 +211,7 @@ NIF(cberl_nif_store)
     
     free(key);
     free(hashKey);
+    free(value);
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex);
         return return_lcb_error(env, ret);
@@ -619,19 +622,26 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     ErlNifBinary value_binary;
+    ERL_NIF_TERM term;
     switch(cb->flag) {
         case 1:
-            return enif_make_int(env, *(int*)cb->data);
+            term = enif_make_int(env, *(int*)cb->data);
+            break;
         case 2:
-            return enif_make_string_len(env, cb->data, strlen(cb->data), ERL_NIF_LATIN1);
+            term =  enif_make_string_len(env, cb->data, cb->size, ERL_NIF_LATIN1);
+            break;
         case 3:
             enif_alloc_binary(cb->size, &value_binary);
             memcpy(value_binary.data, cb->data, cb->size);
-            return enif_make_binary(env, &value_binary);
+            term =  enif_make_binary(env, &value_binary);
+            break;
         default:
             //assume string
-            return enif_make_string_len(env, cb->data, strlen(cb->data), ERL_NIF_LATIN1);
+            term =  enif_make_string_len(env, cb->data, strlen(cb->data), ERL_NIF_LATIN1);
+            break;
     }
+    free(cb->data);
+    return term;
 }
 
 static ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value){
