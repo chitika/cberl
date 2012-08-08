@@ -57,7 +57,9 @@ static void arithmetic_callback(libcouchbase_t instance,
     cb->error = error;
     cb->flag = 1;
     if (error == LIBCOUCHBASE_SUCCESS) {
-            cb->data = &value;
+        cb->size = sizeof(libcouchbase_uint64_t);
+        cb->data = malloc(cb->size);
+        memcpy(cb->data, &value, cb->size);
     }
 }
 static void unlock_callback(libcouchbase_t instance,
