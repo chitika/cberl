@@ -629,15 +629,16 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
             break;
         case 2:
             term =  enif_make_string_len(env, cb->data, cb->size, ERL_NIF_LATIN1);
-            break;
         case 3:
             enif_alloc_binary(cb->size, &value_binary);
             memcpy(value_binary.data, cb->data, cb->size);
             term =  enif_make_binary(env, &value_binary);
             break;
+        case 4:
         default:
-            //assume string
-            term =  enif_make_string_len(env, cb->data, strlen(cb->data), ERL_NIF_LATIN1);
+            printf("asdasd   %d \n", cb->flag);
+            printf("eee: %d \n vvv: %d\n", cb->size, sizeof(libcouchbase_uint64_t)); 
+            term = enif_make_uint64(env, *(libcouchbase_uint64_t*)cb->data);
             break;
     }
     free(cb->data);

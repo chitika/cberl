@@ -5,6 +5,7 @@
 #include <string.h>
 #include <libcouchbase/couchbase.h>
 
+
 struct libcouchbase_callback {
     libcouchbase_error_t error;
     size_t size;
@@ -55,7 +56,7 @@ static void arithmetic_callback(libcouchbase_t instance,
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
-    cb->flag = 1;
+    cb->flag = 4;
     if (error == LIBCOUCHBASE_SUCCESS) {
         cb->size = sizeof(libcouchbase_uint64_t);
         cb->data = malloc(cb->size);
