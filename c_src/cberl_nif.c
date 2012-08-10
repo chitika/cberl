@@ -623,6 +623,7 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     cb = (struct libcouchbase_callback *)cookie;
     ErlNifBinary value_binary;
     ERL_NIF_TERM term;
+    uint64_t val;
     switch(cb->flag) {
         case 1:
             term = enif_make_int(env, *(int*)cb->data);
@@ -635,10 +636,11 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
             term =  enif_make_binary(env, &value_binary);
             break;
         case 4:
-        default:
-            printf("asdasd   %d \n", cb->flag);
-            printf("eee: %d \n vvv: %d\n", cb->size, sizeof(libcouchbase_uint64_t)); 
             term = enif_make_uint64(env, *(libcouchbase_uint64_t*)cb->data);
+            break;
+        default:
+            val = strtoull((char*)cb->data, (cb->data) + (cb->size - 1), 10);
+            term = enif_make_uint64(env, val);
             break;
     }
     free(cb->data);
