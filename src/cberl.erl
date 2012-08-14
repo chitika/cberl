@@ -235,14 +235,14 @@ operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
 
-encode_value(json, Value) -> jsx:to_json(Value);
+encode_value(json, Value) -> jiffy:encode(Value);
 encode_value(gzip, _Value) -> <<"zipped value here">>;
 encode_value(raw_binary, Value) -> term_to_binary(Value);
 encode_value(Custom, Value) ->
     {_Flag, {Module, Function}} = application:get_env(Custom),
     apply(Module, Function, [Value]).
 
-decode_value(?'CBE_JSON', Value) -> io:format("~p~n", [Value]), jsx:to_term(Value);
+decode_value(?'CBE_JSON', Value) -> io:format("~p~n", [Value]), jiffy:decode(Value);
 decode_value(?'CBE_GZIP', Value) -> <<"unzipped value here">>;
 decode_value(?'CBE_RAW', Value) -> binary_to_term(Value).
 
