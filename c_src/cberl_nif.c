@@ -19,6 +19,7 @@ typedef struct handle {
 static void init_atoms(ErlNifEnv* env);
 
 #define NIF(name)  ERL_NIF_TERM name(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+#define assert_badarg(S, Env) if (! S) { return enif_make_badarg(Env); }
 // Prototypes
 NIF(cberl_nif_new);
 NIF(cberl_nif_store);
@@ -37,12 +38,12 @@ static ErlNifFunc nif_funcs[] =
 {
     {"new", 4, cberl_nif_new},
     {"store", 7, cberl_nif_store},
-    {"mget", 4, cberl_nif_mget},
-    {"getl", 4, cberl_nif_getl},
+    {"mget", 3, cberl_nif_mget},
+    {"getl", 3, cberl_nif_getl},
     {"unlock", 3, cberl_nif_unlock},
-    {"mtouch", 4, cberl_nif_mtouch},
-    {"arithmetic", 7, cberl_nif_arithmetic},
-    {"remove", 3, cberl_nif_remove},
+    {"mtouch", 3, cberl_nif_mtouch},
+    {"arithmetic", 6, cberl_nif_arithmetic},
+    {"remove", 2, cberl_nif_remove},
     {"destroy", 1, cberl_nif_destroy}
 };
 
@@ -56,37 +57,21 @@ NIF(cberl_nif_new)
     char * bucket;
    
     unsigned arg_length;
-    if (! enif_get_list_length(env, argv[0], &arg_length)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_list_length(env, argv[0], &arg_length), env);       
     host = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[0], host, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_string(env, argv[0], host, arg_length + 1, ERL_NIF_LATIN1), env);       
 
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_list_length(env, argv[1], &arg_length), env);       
     user = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], user, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
+    assert_badarg(enif_get_string(env, argv[1], user, arg_length + 1, ERL_NIF_LATIN1), env);           
 
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_list_length(env, argv[2], &arg_length), env);       
     pass = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], pass, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_string(env, argv[2], pass, arg_length + 1, ERL_NIF_LATIN1), env);       
      
-    if (! enif_get_list_length(env, argv[3], &arg_length)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_list_length(env, argv[3], &arg_length), env);       
     bucket = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[3], bucket, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_string(env, argv[3], bucket, arg_length + 1, ERL_NIF_LATIN1), env);       
     
     handle_t * handle = enif_alloc_resource(cberl_handle,
                                                   sizeof(handle_t));
@@ -122,96 +107,50 @@ NIF(cberl_nif_new)
 NIF(cberl_nif_store)
 {
     handle_t *  handle;
-    int op;
-    char * hashKey;
-    char * key;
-    void * value;
-    ErlNifBinary value_binary;
-    int exp;
-    int flags;
-
-    unsigned int nbytes;
-    libcouchbase_error_t ret; 
     struct libcouchbase_callback cb; 
-    unsigned arg_length;
+    int operation;
+    void * key;
+    unsigned int nkey;
+    void * bytes;
+    libcouchbase_size_t nbytes;
+    libcouchbase_uint32_t flags;
+    int exp;
+    libcouchbase_cas_t cas;
+
+    ErlNifBinary value_binary;
+    libcouchbase_error_t ret; 
     
-    if (! enif_get_resource(env, argv[0], cberl_handle, (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
-
-    if (! enif_get_int(env, argv[1], &op)) {
-        return enif_make_badarg(env);
-    }
-
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
-
-    if (! enif_get_list_length(env, argv[3], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[3], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    } 
-
-    if (! enif_get_int(env, argv[6], &flags)) {
-        return enif_make_badarg(env);
-    }
-    switch(flags) {
-        case 1:
-            value = (int *) malloc(sizeof(int));
-            if (! enif_get_int(env, argv[4], (int*)value)) {
-                return enif_make_badarg(env);
-            }               
-            nbytes = sizeof(int);
-            break;
-        case 2:
-            if (! enif_get_list_length(env, argv[4], &nbytes)) {
-                return enif_make_badarg(env);
-            }
-            value = (char *) malloc(nbytes);
-            if (! enif_get_string(env, argv[4], value, nbytes + 1, ERL_NIF_LATIN1)) {
-                return enif_make_badarg(env);
-            }
-            break;
-        case 3:
-            if (! enif_inspect_iolist_as_binary(env, argv[4], &value_binary)) {
-                return enif_make_badarg(env);
-            }
-            value = malloc(value_binary.size);
-            memcpy(value, value_binary.data, value_binary.size);
-            nbytes = value_binary.size;
-            break;
-        default:
-            return enif_make_badarg(env);
-    }
-    if (! enif_get_int(env, argv[5], &exp)) {
-        return enif_make_badarg(env);
-    }               
-
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);        
+    assert_badarg(enif_get_int(env, argv[1], &operation), env);       
+    assert_badarg(enif_get_list_length(env, argv[2], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[2], key, nkey, ERL_NIF_LATIN1), env);           
+    assert_badarg(enif_inspect_iolist_as_binary(env, argv[3], &value_binary), env); 
     
+    bytes = malloc(value_binary.size);
+    memcpy(bytes, value_binary.data, value_binary.size);
+    nbytes = value_binary.size;
+
+    assert_badarg(enif_get_uint(env, argv[4], &flags), env);       
+    assert_badarg(enif_get_int(env, argv[5], &exp), env);                      
+    assert_badarg(enif_get_uint64(env, argv[6], &cas), env);       
+
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_store_by_key(handle->instance,
+    ret = libcouchbase_store(handle->instance,
                                   &cb,
-                                  op,
-                                  strlen(hashKey) == 0 ? NULL : hashKey,
-                                  strlen(hashKey),
+                                  operation,
                                   key, /* the key or _id of the document */
-                                  strlen(key), /* the key length */
-                                  value,
+                                  nkey, /* the key length */
+                                  bytes,
                                   nbytes, /* length of */
                                   flags,  /* flags,  */
                                   exp,  /* expiration */
-                                  0); /* and CAS values, see API reference */
+                                  cas); /* and CAS values, see API reference */
     
     free(key);
-    free(hashKey);
-    free(value);
+    free(bytes);
+    
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex);
         return return_lcb_error(env, ret);
@@ -227,54 +166,33 @@ NIF(cberl_nif_store)
 NIF(cberl_nif_mget)
 {
     handle_t * handle;
-    char * hashKey;
-    char * key;
+    struct libcouchbase_callback cb; 
+    void * key;
+    unsigned int nkey; 
     int exp;
 
     libcouchbase_error_t ret; 
-    struct libcouchbase_callback cb; 
-    unsigned arg_length;
     
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
-
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);           
+    assert_badarg(enif_get_int(env, argv[2], &exp), env);       
     
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
-    
-    if (! enif_get_int(env, argv[3], &exp)) {
-        return enif_make_badarg(env);
-    }
     const char* keys[1];
-    size_t nkey[1];
+    size_t nkeys[1];
     keys[0] = key;
-    nkey[0] = strlen(key);
+    nkeys[0] = nkey;
     
     enif_mutex_lock(handle->mutex); 
-    ret = libcouchbase_mget_by_key(handle->instance,
+    ret = libcouchbase_mget(handle->instance,
                              &cb,
-                             strlen(hashKey) == 0 ? NULL : hashKey,
-                             strlen(hashKey),
                              1,
                              (const void*const*)keys,
-                             nkey,
+                             nkeys,
                              exp == 0 ? NULL : (libcouchbase_time_t*)&exp); 
     free(key);
-    free(hashKey);
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return_lcb_error(env, ret);
@@ -290,48 +208,27 @@ NIF(cberl_nif_mget)
 
 NIF(cberl_nif_getl) {
     handle_t * handle;
-    char * hashKey;
-    char * key;
+    struct libcouchbase_callback cb; 
+    void * key;
+    unsigned int nkey;
     int exp;
 
     libcouchbase_error_t ret; 
-    struct libcouchbase_callback cb; 
-    unsigned arg_length;
     
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
-
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);           
     
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
-    
-    if (! enif_get_int(env, argv[3], &exp)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_int(env, argv[3], &exp), env);       
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_getl_by_key(handle->instance,
+    ret = libcouchbase_getl(handle->instance,
                              &cb,
-                             strlen(hashKey) == 0 ? NULL : hashKey,
-                             strlen(hashKey),
                              key,
-                             strlen(key),
+                             nkey, 
                              exp == 0 ? NULL : (libcouchbase_time_t*)&exp); 
     free(key);
-    free(hashKey);
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return_lcb_error(env, ret);
@@ -349,42 +246,27 @@ NIF(cberl_nif_getl) {
 NIF(cberl_nif_unlock)
 {
     handle_t * handle;
-    char * key;
-    char * hashKey;
-    libcouchbase_error_t ret; //for checking responses
     struct libcouchbase_callback cb; 
-    unsigned arg_length;
-    
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
+    void * key;
+    unsigned int nkey;
+    int cas;
 
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
+    libcouchbase_error_t ret; //for checking responses
     
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);           
+    
+    assert_badarg(enif_get_int(env, argv[2], &cas), env);       
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_unlock_by_key(handle->instance,
+    ret = libcouchbase_unlock(handle->instance,
                              &cb,
-                             strlen(hashKey) == 0 ? NULL : hashKey,
-                             strlen(hashKey),
                              key,
-                             strlen(key),
-                             0); 
+                             nkey,
+                             cas); 
     free(key);
-    free(hashKey);
 
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
@@ -402,51 +284,32 @@ NIF(cberl_nif_unlock)
 NIF(cberl_nif_mtouch)
 {
     handle_t * handle;
-    char * key;
-    char * hashKey;
-    int exp_time;
-    libcouchbase_error_t ret; //for checking responses
     struct libcouchbase_callback cb; 
-    unsigned arg_length;
-    
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
+    void * key;
+    unsigned int nkey;
+    int exp;
 
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    libcouchbase_error_t ret; //for checking responses
     
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }   
-
-    if (! enif_get_int(env, argv[2], &exp_time)) {
-        return enif_make_badarg(env);
-    } 
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);       
+    
+    assert_badarg(enif_get_int(env, argv[2], &exp), env);        
 
     const char* keys[1];
-    size_t nkey[1];
+    size_t nkeys[1];
     keys[0] = key;
-    nkey[0] = strlen(key);
+    nkeys[0] = nkey;
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_mtouch_by_key(handle->instance,
+    ret = libcouchbase_mtouch(handle->instance,
                              &cb,
-                             strlen(hashKey) == 0 ? NULL : hashKey,
-                             strlen(hashKey),
                              1,
                              (const void*const*)keys,
-                             nkey,
-                             (libcouchbase_time_t*)&exp_time); 
+                             nkeys,
+                             (libcouchbase_time_t*)&exp); 
     free(key);
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
@@ -462,58 +325,36 @@ NIF(cberl_nif_mtouch)
 
 NIF(cberl_nif_arithmetic) {
     handle_t * handle;
-    char * key;
-    char * hashKey;
+    struct libcouchbase_callback cb; 
+    void * key;
+    unsigned int nkey;
     int64_t delta;
     uint64_t exp;
     int create;
     uint64_t initial; 
 
     libcouchbase_error_t ret; //for checking responses
-    struct libcouchbase_callback cb; 
-    unsigned arg_length;
     
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);       
 
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_int64(env, argv[2], &delta), env);        
 
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }   
-
-    if (! enif_get_int64(env, argv[3], &delta)) {
-        return enif_make_badarg(env);
-    } 
-
-    if (! enif_get_uint64(env, argv[4], &exp)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_uint64(env, argv[3], &exp), env);       
     
-    if (! enif_get_int(env, argv[5], &create)) {
+    assert_badarg(enif_get_int(env, argv[4], &create), env);   {
         create = 0;
     }
     
-    if (! enif_get_uint64(env, argv[6], &initial)) {
+    assert_badarg(enif_get_uint64(env, argv[5], &initial), env);   {
         initial = 0;
     }
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_arithmetic_by_key(handle->instance,
+    ret = libcouchbase_arithmetic(handle->instance,
                                     &cb,
-                                    strlen(hashKey) == 0 ? NULL : hashKey,
-                                    strlen(hashKey),
                                     key,
                                     strlen(key),
                                     delta,
@@ -535,40 +376,26 @@ NIF(cberl_nif_arithmetic) {
 
 NIF(cberl_nif_remove) {
     handle_t * handle;
-    char * key;
-    char * hashKey;
-    libcouchbase_error_t ret; //for checking responses
     struct libcouchbase_callback cb; 
-    unsigned arg_length;
+    void * key;
+    unsigned int nkey;
+    int cas;
+
+    libcouchbase_error_t ret; //for checking responses
     
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    } 
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
+    nkey += 1;
+    key = (char *) malloc(nkey);
+    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);           
     
-    if (! enif_get_list_length(env, argv[1], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    hashKey = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[1], hashKey, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
-    
-    if (! enif_get_list_length(env, argv[2], &arg_length)) {
-        return enif_make_badarg(env);
-    }
-    key = (char *) malloc(arg_length + 1);
-    if (! enif_get_string(env, argv[2], key, arg_length + 1, ERL_NIF_LATIN1)) {
-        return enif_make_badarg(env);
-    }    
+    assert_badarg(enif_get_int(env, argv[2], &cas), env);       
     enif_mutex_lock(handle->mutex); 
-    ret = libcouchbase_remove_by_key(handle->instance,
+    ret = libcouchbase_remove(handle->instance,
                              &cb,
-                             strlen(hashKey) == 0 ? NULL : hashKey,
-                             strlen(hashKey),
                              key,
-                             strlen(key),
-                             0); 
+                             nkey,
+                             cas); 
     free(key);
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
@@ -580,15 +407,11 @@ NIF(cberl_nif_remove) {
         return return_lcb_error(env, cb.error);
     } 
     return a_ok;
-    
 }
 
 NIF(cberl_nif_destroy) {
     handle_t * handle;
-    if (! enif_get_resource(env, argv[0], cberl_handle,
-                                         (void **) &handle)) {
-        return enif_make_badarg(env);
-    }
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     enif_mutex_lock(handle->mutex);
     libcouchbase_destroy(handle->instance);
     enif_mutex_unlock(handle->mutex);
@@ -622,27 +445,9 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     ErlNifBinary value_binary;
-    ERL_NIF_TERM term;
-    uint64_t val;
-    switch(cb->flag) {
-        case 1:
-            term = enif_make_int(env, *(int*)cb->data);
-            break;
-        case 2:
-            term =  enif_make_string_len(env, cb->data, cb->size, ERL_NIF_LATIN1);
-        case 3:
-            enif_alloc_binary(cb->size, &value_binary);
-            memcpy(value_binary.data, cb->data, cb->size);
-            term =  enif_make_binary(env, &value_binary);
-            break;
-        case 4:
-            term = enif_make_uint64(env, *(libcouchbase_uint64_t*)cb->data);
-            break;
-        default:
-            val = strtoull((char*)cb->data, (cb->data) + (cb->size - 1), 10);
-            term = enif_make_uint64(env, val);
-            break;
-    }
+    enif_alloc_binary(cb->size, &value_binary);
+    memcpy(value_binary.data, cb->data, cb->size);
+    ERL_NIF_TERM term =  enif_make_tuple2(env, enif_make_int(env, cb->flag), enif_make_binary(env, &value_binary));
     free(cb->data);
     return term;
 }

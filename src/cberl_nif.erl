@@ -2,12 +2,12 @@
 
 -export([new/4,
          store/7,
-         mget/4,
-         getl/4,
+         mget/3,
+         getl/3,
          unlock/3,
-         mtouch/4,
-         arithmetic/7,
-         remove/3,
+         mtouch/3,
+         arithmetic/6,
+         remove/2,
          destroy/1]).
 
 -on_load(init/0).
@@ -35,25 +35,25 @@ init() ->
 new(_,_,_,_) ->
     ?nif_stub.
 
-store(_Instance, _Op, _HashKey, _Key, _Value, _Exp, _Flag) ->
+store(_Instance, _Op, _Key, _Value, _Flags, _Exp, _Cas) ->
     ?nif_stub.
 
-mget(_Instance, _HashKey, _Key, _Exp) ->
+mget(_Instance, _Key, _Exp) ->
     ?nif_stub.
 
-getl(_Instance, _HashKey, _Key, _Exp) ->
+getl(_Instance, _Key, _Exp) ->
     ?nif_stub.
 
-unlock(_Instance, _HashKey, _Key) ->
+unlock(_Instance, _Key, _Cas) ->
     ?nif_stub.
 
-mtouch(_Instance, _HashKey, _Key, _ExpTime) ->
+mtouch(_Instance, _Key, _Exp) ->
     ?nif_stub.
 
-arithmetic(_Instance, _HashKey, _Key, _Delta, _Exp, _Create, _Initial) ->
+arithmetic(_Instance, _Key, _Delta, _Exp, _Create, _Initial) ->
     ?nif_stub.
 
-remove(_Instance, _HashKey, _Key) ->
+remove(_Instance, _Key) ->
     ?nif_stub.
 
 destroy(_Instance) ->
