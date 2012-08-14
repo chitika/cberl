@@ -7,7 +7,7 @@
          unlock/3,
          mtouch/3,
          arithmetic/6,
-         remove/2,
+         remove/3,
          destroy/1]).
 
 -on_load(init/0).
@@ -53,7 +53,7 @@ mtouch(_Instance, _Key, _Exp) ->
 arithmetic(_Instance, _Key, _Delta, _Exp, _Create, _Initial) ->
     ?nif_stub.
 
-remove(_Instance, _Key) ->
+remove(_Instance, _Key, _Cas) ->
     ?nif_stub.
 
 destroy(_Instance) ->

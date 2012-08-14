@@ -43,7 +43,7 @@ static ErlNifFunc nif_funcs[] =
     {"unlock", 3, cberl_nif_unlock},
     {"mtouch", 3, cberl_nif_mtouch},
     {"arithmetic", 6, cberl_nif_arithmetic},
-    {"remove", 2, cberl_nif_remove},
+    {"remove", 3, cberl_nif_remove},
     {"destroy", 1, cberl_nif_destroy}
 };
 
