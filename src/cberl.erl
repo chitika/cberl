@@ -7,12 +7,16 @@
 -module(cberl).
 -include("cberl.hrl").
 -export([new/0, new/1, new/3, new/4, destroy/1]).
--export([store/4, store/5, store/6, add/3, replace/3, set/3, append/3, 
-         prepend/3, add/4, replace/4, set/4, append/4, prepend/4]).
--export([mget/2, mget/3, mget/4,  getl/2, getl/3, getl/4]).
--export([unlock/2, unlock/3, mtouch/3, mtouch/4,
+-export([store/7, mget/3, getl/3]).
+%store operations
+-export([add/4, add/5, replace/4, replace/5, set/4, set/5]).
+%update operations
+-export([append/4, append/5, prepend/4, prepend/5, mtouch/3]).
+%retrieval operations
+-export([get_and_touch/3, get_and_lock/3, get/2, unlock/3]).
+-export([
          arithmetic/3, arithmetic/4,  arithmetic/5, arithmetic/7,
-         remove/2, remove/3]).
+         remove/2]).
 
 
 %% @equiv new("localhost:8091", "", "", "")
@@ -40,67 +44,92 @@ new(Host, Username, Password) ->
 new(Host, Username, Password, BucketName) ->
     cberl_nif:new(Host, Username, Password, BucketName).
 
-%% @equiv add(Instance, Key, Value, 0)
--spec add(instance(), key(), value()) -> ok | {error, _}.
-add(Instance, Key, Value) ->
-    add(Instance, Key, Value, 0).
 
-%% @equiv store(Instance, add, "", Key, Value, Exp)
--spec add(instance(), key(), value(), integer()) -> ok | {error, _}.
-add(Instance, Key, Value, Exp) ->
-    store(Instance, add, "", Key, Value, Exp).
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% STORE OPERATIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @equiv replace(Instance, Key, Value, 0)
--spec replace(instance(), key(), value()) -> ok | {error, _}.
-replace(Instance, Key, Value) ->
-    replace(Instance, Key, Value, 0).
+%% @equiv add(Instance, Key, Exp, Value, json)
+-spec add(instance(), key(), integer(), value()) -> ok | {error, _}.
+add(Instance, Key, Exp, Value) ->
+    add(Instance, Key, Exp, Value, json).
+
+%% @equiv store(Instance, add, Key, Value, Transcoder, Exp, 0)
+-spec add(instance(), key(), integer(), value(), atom()) -> ok | {error, _}.
+add(Instance, Key, Exp, Value, Transcoder) ->
+    store(Instance, add, Key, Value, Transcoder, Exp, 0).
+
+%% @equiv replace(Instance, Key, Exp, Value, json)
+-spec replace(instance(), key(), integer(), value()) -> ok | {error, _}.
+replace(Instance, Key, Exp, Value) ->
+    replace(Instance, Key, Exp, Value, json).
 
 %% @equiv store(Instance, replace, "", Key, Value, Exp)
--spec replace(instance(), key(), value(), integer()) -> ok | {error, _}.
-replace(Instance, Key, Value, Exp) ->
-    store(Instance, replace, "", Key, Value, Exp).
+-spec replace(instance(), key(), integer(), value(), atom()) -> ok | {error, _}.
+replace(Instance, Key, Exp, Value, Transcoder) ->
+    store(Instance, replace, Key, Value, Transcoder, Exp, 0).
 
-%% @equiv set(Instance, Key, Value, 0)
--spec set(instance(), key(), value()) -> ok | {error, _}.
-set(Instance, Key, Value) ->
-    set(Instance, Key, Value, 0).
+%% @equiv set(Instance, Key, Exp, Value, json)
+-spec set(instance(), key(), integer(), value()) -> ok | {error, _}.
+set(Instance, Key, Exp, Value) ->
+    set(Instance, Key, Exp, Value, json).
 
 %% @equiv store(Instance, set, "", Key, Value, Exp)
--spec set(instance(), key(), value(), integer()) -> ok | {error, _}.
-set(Instance, Key, Value, Exp) ->
-    store(Instance, set, "", Key, Value, Exp).
+-spec set(instance(), key(), integer(), value(), integer()) -> ok | {error, _}.
+set(Instance, Key, Exp, Value, Transcoder) ->
+    store(Instance, set, Key, Value, Transcoder, Exp, 0).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UPDATE OPERATIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @equiv append(Instance, Key, Value, 0)
--spec append(instance(), key(), value()) -> ok | {error, _}.
-append(Instance, Key, Value) ->
-    append(Instance, Key, Value, 0).
+-spec append(instance(), integer(), key(), value()) -> ok | {error, _}.
+append(Instance, Cas, Key, Value) ->
+    append(Instance, Cas, Key, Value, json).
 
-%% @equiv store(Instance, append, "", Key, Value, Exp)
--spec append(instance(), key(), value(), integer()) -> ok | {error, _}.
-append(Instance, Key, Value, Exp) ->
-    store(Instance, append, "", Key, Value, Exp).
+%% @equiv store(Instance, append, Key, Value, Transcoder, 0, Cas)
+-spec append(instance(), integer(), key(), value(), atom() ) -> ok | {error, _}.
+append(Instance, Cas, Key, Value, Transcoder) ->
+    store(Instance, append, Key, Value, Transcoder, 0, Cas).
 
-%% @equiv prepend(Instance, Key, Value, 0)
--spec prepend(instance(), key(), value()) -> ok | {error, _}.
-prepend(Instance, Key, Value) ->
-    prepend(Instance, Key, Value, 0).
+%% @equiv prepend(Instance, Cas, Key, Value, json)
+-spec prepend(instance(), integer(), key(), value()) -> ok | {error, _}.
+prepend(Instance, Cas, Key, Value) ->
+    prepend(Instance, Cas, Key, Value, json).
 
-%% @equiv store(Instance, prepend, "", Key, Value, Exp)
--spec prepend(instance(), key(), value(), integer()) -> ok | {error, _}.
-prepend(Instance, Key, Value, Exp) ->
-    store(Instance, prepend, "", Key, Value, Exp).
+%% @equiv store(Instance, prepend, Key, Value, Transcoder, 0, Cas)
+-spec prepend(instance(), integer(), key(), value(), integer()) -> ok | {error, _}.
+prepend(Instance, Cas, Key, Value, Transcoder) ->
+    store(Instance, prepend, Key, Value, Transcoder, 0, Cas).
 
-%% @equiv store(Instance, Op, "", Key, Value, 0)
--spec store(instance(), operation_type(), key(), value()) -> ok | {error, _}.
-store(Instance, Op, Key, Value) ->
-    store(Instance, Op, "", Key, Value, 0).
+%% @doc Touch (set expiration time) on the given key
+%% Instance libcouchbase instance to use
+%% Key key to touch
+%% ExpTime a new expiration time for the item 
+-spec mtouch(instance(), key(), integer()) -> ok | {error, _}.
+mtouch(Instance, Key, ExpTime) ->
+    cberl_nif:mtouch(Instance, Key, ExpTime).
 
-%% @equiv store(Instance, Op, "", Key, Value, Exp)
--spec store(instance(), operation_type(), key(), value(), integer()) -> ok |
-    {error, _ }.
-store(Instance, Op, Key, Value, Exp) ->
-    store(Instance, Op, "", Key, Value, Exp).
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RETRIEVAL METHODS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-spec get_and_touch(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+get_and_touch(Instance, Key, Exp) -> 
+    mget(Instance, Key, Exp).
+
+-spec get(instance(), key()) -> {ok, integer(), value()} | {error, _}.
+get(Instance, Key) ->
+    mget(Instance, Key, 0).
+
+-spec get_and_lock(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+get_and_lock(Instance, Key, Exp) ->
+    getl(Instance, Key, Exp).
+
+-spec unlock(instance(), key(), integer()) -> ok | {error, _}.
+unlock(Instance, Key, Cas) ->
+    cberl_nif:unlock(Instance, Key, Cas).
 %% @doc main store function takes care of all storing
 %% Instance libcouchbase instance to use
 %% Op add | replace | set | append | prepend
@@ -108,39 +137,22 @@ store(Instance, Op, Key, Value, Exp) ->
 %%          replace: Replace the existing object in the cache
 %%          set : Unconditionally set the object in the cache
 %%          append/prepend : Append/Prepend this object to the existing object 
-%% HashKey the key to use for hashing
 %% Key the key to set         
 %% Value the value to set
+%% Transcoder to encode the value
 %% Exp When the object should expire. The expiration time is
 %%     either an offset into the future.. OR an absolute
 %%     timestamp, depending on how large (numerically) the
 %%     expiration is. if the expiration exceeds 30 days
 %%     (i.e. 24 * 3600 * 30) then it's an absolute timestamp. 
 %%     pass 0 for infinity
-%% @todo Add CAS
--spec store(instance(), operation_type(), key(), key(), value(), 
-            integer()) -> ok | {error, _}.
-store(Instance, Op, HashKey, Key, Value, Exp) when is_list(Key) andalso 
-        is_integer(Value) ->    
-    cberl_nif:store(Instance, operation_value(Op), HashKey, Key, Value, Exp, ?'CBE_INT');
-store(Instance, Op, HashKey, Key, Value, Exp) when is_list(Key) andalso 
-        is_list(Value) ->    
-    cberl_nif:store(Instance, operation_value(Op), HashKey, Key, Value, Exp, ?'CBE_STR');
-store(Instance, Op, HashKey, Key, Value, Exp) when is_list(Key) andalso
-        is_binary(Value) ->    
-    cberl_nif:store(Instance, operation_value(Op), HashKey, Key, Value, Exp, ?'CBE_BIN');
-store(_, _, _, _, _, _) ->    
-    throw(badarg).
-
-%% @equiv mget(Instance, "", Key, -1)
--spec mget(instance(), key()) -> {ok, value()} | {error, _}.
-mget(Instance, Key) ->
-    mget(Instance, "", Key, -1).
-
-%% @equiv  mget(Instance, "", Key, Exp)
--spec mget(instance(), key(), integer()) -> {ok, value()} | {error, _}.
-mget(Instance, Key, Exp) ->
-    mget(Instance, "", Key, Exp).
+%% CAS
+-spec store(instance(), operation_type(), key(), value(), atom(), 
+            integer(), integer()) -> ok | {error, _}.
+store(Instance, Op, Key, Value, Transcoder, Exp, Cas) ->
+    StoreValue = encode_value(Transcoder, Value), 
+    cberl_nif:store(Instance, operation_value(Op), Key, StoreValue, 
+                    transcoder_flag(Transcoder), Exp, Cas).
 
 %% @doc get the value for the given key
 %% Instance libcouchbase instance to use
@@ -148,56 +160,29 @@ mget(Instance, Key, Exp) ->
 %% Key the key to get   
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(instance(), key(), key(), integer()) -> {ok, value()} | {error, _}.
-mget(Instance, HashKey, Key, Exp) ->
-    cberl_nif:mget(Instance, HashKey, Key, Exp).
-
-%% @equiv  getl(Instance, "", Key, -1)
--spec getl(instance(), key()) -> {ok, value()} | {error, _}.
-getl(Instance, Key) ->
-    getl(Instance, "", Key, -1).
-
-%% @equiv  getl(Instance, "", Key, Exp)
--spec getl(instance(), key(), integer()) -> {ok, value()} | {error, _}.
-getl(Instance, Key, Exp) ->
-    getl(Instance, "", Key, Exp).
+-spec mget(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+mget(Instance, Key, Exp) ->
+    case cberl_nif:mget(Instance, Key, Exp) of
+        {error, Error} -> {error, Error};
+        {ok, {Cas, Flag, Value}} ->
+            DecodedValue = decode_value(Flag, Value),
+            {ok, Cas, DecodedValue}
+    end.
 
 %% @doc Get an item with a lock that has a timeout
 %% Instance libcouchbase instance to use
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(instance(), key(), key(), integer()) -> {ok, value()} | {error, _}.
-getl(Instance, HashKey, Key, Exp) ->
-    cberl_nif:getl(Instance, HashKey, Key, Exp).
-
-%% @equiv unlock(Instance, "", Key)
--spec unlock(instance(), key()) -> ok | {error, _}.
-unlock(Instance, Key) ->
-    unlock(Instance, "", Key).
-
-%% @doc Unlock the key locked with GETL
-%% Instance libcouchbase instance to use
-%%  HashKey the key to use for hashing
-%%  Key key to unlock
--spec unlock(instance(), key(), key()) -> ok | {error, _}.
-unlock(Instance, HashKey, Key) ->
-    cberl_nif:unlock(Instance, HashKey, Key).
-
-%% @equiv mtouch(Instance, "", Key, ExpTime)
--spec mtouch(instance(), key(), integer()) -> ok | {error, _}.
-mtouch(Instance, Key, ExpTime) ->
-    mtouch(Instance, "", Key, ExpTime).
-
-%% @doc Touch (set expiration time) on the given key
-%% Instance libcouchbase instance to use
-%% HashKey the key to use for hashing
-%% Key key to touch
-%% ExpTime a new expiration time for the item 
--spec mtouch(instance(), key(), key(), integer()) -> ok | {error, _}.
-mtouch(Instance, HashKey, Key, ExpTime) ->
-    cberl_nif:mtouch(Instance, HashKey, Key, ExpTime).
-
+-spec getl(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+getl(Instance, Key, Exp) ->
+    case cberl_nif:getl(Instance, Key, Exp) of
+        {error, Error} -> {error, Error};
+        {ok, {Cas, Flag, Value}} ->
+            DecodedValue = decode_value(Flag, Value),
+            {ok, Cas, DecodedValue}
+    end.
+   
 %% @equiv arithmetic(Instance, "", Key, Delta, 0, 0, 0)
 -spec arithmetic(instance(), key(), integer()) -> ok | {error, _}.
 arithmetic(Instance, Key, Delta) ->
@@ -227,22 +212,21 @@ arithmetic(Instance, Key, Delta, Exp, Initial) ->
 arithmetic(Instance, HashKey, Key, Delta, Exp, Create, Initial) ->
     cberl_nif:arithmetic(Instance, HashKey, Key, Delta, Exp, Create, Initial).
 
-%% @equiv remove(Instance, "", Key)
--spec remove(instance(), key()) -> ok | {error, _}.
-remove(Instance, Key) ->
-    remove(Instance, "", Key).
-
 %% @doc remove the value for given key
 %% Instance libcouchbase instance to use
-%% HashKey the key to use for hashing
 %% Key key to  remove
--spec remove(instance(), key(), key()) -> ok | {error, _}.
-remove(Instance, HashKey, Key) ->
-    cberl_nif:remove(Instance, HashKey, Key).
+-spec remove(instance(), key()) -> ok | {error, _}.
+remove(Instance, Key) ->
+    cberl_nif:remove(Instance, Key, 0).
 
 %% @doc close the libcouchbase instance
 destroy(Instance) ->
     cberl_nif:destroy(Instance).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% INTERNAL FUNCTIONS %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec operation_value(operation_type()) -> integer().
 operation_value(add) -> ?'CBE_ADD';
@@ -250,3 +234,24 @@ operation_value(replace) -> ?'CBE_REPLACE';
 operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
+
+encode_value(json, Value) -> jsx:to_json(Value);
+encode_value(gzip, _Value) -> <<"zipped value here">>;
+encode_value(raw_binary, Value) -> term_to_binary(Value);
+encode_value(Custom, Value) ->
+    {_Flag, {Module, Function}} = application:get_env(Custom),
+    apply(Module, Function, [Value]).
+
+decode_value(?'CBE_JSON', Value) -> io:format("~p~n", [Value]), jsx:to_term(Value);
+decode_value(?'CBE_GZIP', Value) -> <<"unzipped value here">>;
+decode_value(?'CBE_RAW', Value) -> binary_to_term(Value).
+
+%decode_value(Custom, Value) -> jsx:to_term(Value);
+transcoder_flag(json) -> ?'CBE_JSON';
+transcoder_flag(gzip) -> ?'CBE_GZIP';
+transcoder_flag(raw_binary) -> ?'CBE_RAW'.
+
+%transcoder_flag(Custom) -> 
+%    {Flag, {_Module, _Function}} = application:get_env(Custom),
+%    Flag.
+

@@ -4,9 +4,9 @@
 -define('CBE_APPEND',   4).
 -define('CBE_PREPEND',  5).
 
--define('CBE_INT',      1).
--define('CBE_STR',      2).
--define('CBE_BIN',      3).
+-define('CBE_JSON',     1).
+-define('CBE_GZIP',     2).
+-define('CBE_RAW',      3).
 
 -type key() :: string().
 -type value() :: string() | list() | integer() | binary().
