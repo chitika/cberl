@@ -4,7 +4,9 @@
 
 cberl_test_() ->
     [{foreach, fun setup/0, fun clean_up/1,
-      [fun test_basics/1]}].
+      [fun test_set_and_get/1,
+       fun test_replace_add/1,
+       fun test_append_prepend/1]}].
 %%%===================================================================
 %%% Setup / Teardown
 %%%===================================================================
@@ -13,44 +15,50 @@ setup() ->
     Instance.
 
 clean_up(Instance) ->
-     ok = cberl:destroy(Instance).
+    ok = cberl:remove(Instance, "testkey"),
+    ok = cberl:remove(Instance, "testkey1"),
+    ok = cberl:destroy(Instance).
 %%%===================================================================
 %%% Tests
 %%%===================================================================
 
-test_basics(Instance) ->
-    ok = cberl:set(Instance, "cberlskey", "cberlstringval"),   
-    ok = cberl:set(Instance, "cberlikey", 9631),   
-    ok = cberl:set(Instance, "cberlbkey", <<"binary">>),   
-    GetS = cberl:mget(Instance, "cberlskey"),
-    GetI = cberl:mget(Instance, "cberlikey"),
-    GetB = cberl:mget(Instance, "cberlbkey"),
-    AddFail = cberl:add(Instance, "cberlskey", "dummy"),
-    ok = cberl:add(Instance, "addpass", "hooray"),
-    AddPass = cberl:mget(Instance, "addpass"),
-    RepFail = cberl:replace(Instance, "nonexistingkey", "failed"),
-    ok = cberl:replace(Instance, "cberlskey", "replaced"),
-    CheckAdd = cberl:mget(Instance, "addpass"),
-    CheckRep = cberl:mget(Instance, "cberlskey"),
-    ok =  cberl:append(Instance, "cberlskey", "tail"),
-    ok =  cberl:prepend(Instance, "cberlskey", "head"),
-    CheckPend = cberl:mget(Instance, "cberlskey"),
-    ok = cberl:remove(Instance, "cberlskey"),
-    ok = cberl:remove(Instance, "cberlikey"),
-    ok = cberl:remove(Instance, "cberlbkey"),
-    ok = cberl:remove(Instance, "addpass"),
-    CheckRemove = cberl:mget(Instance, "addpass"),
-    [?_assertEqual({ok, "cberlstringval"}, GetS),
-     ?_assertEqual({ok, 9631}, GetI),
-     ?_assertEqual({ok, <<"binary">>}, GetB),
-     ?_assertEqual({ok, "hooray"}, AddPass),
-     ?_assertEqual({error, key_eexists}, AddFail),
-     ?_assertEqual({error, key_enoent}, RepFail),
-     ?_assertEqual({ok, "hooray"}, CheckAdd),
-     ?_assertEqual({ok, "replaced"}, CheckRep),
-     ?_assertEqual({ok, "headreplacedtail"}, CheckPend),
-     ?_assertEqual({error, key_enoent}, CheckRemove)
+test_set_and_get(Instance) ->
+    ok = cberl:set(Instance, "testkey", 0, "testval"),
+    Get1 = cberl:get(Instance, "testkey"),
+    ok = cberl:set(Instance, "testkey", 0, "testval", json),
+    Get2 = cberl:get(Instance, "testkey"),
+    ok = cberl:set(Instance, "testkey", 0, "testval", raw_binary),
+    Get3 = cberl:get(Instance, "testkey"),
+    ok = cberl:set(Instance, "testkey", 0, "testval", gzip),
+    Get4 = cberl:get(Instance, "testkey"),
+    [?_assertEqual({ok, 0, "testval"}, Get1),
+     ?_assertEqual({ok, 0, "testval"}, Get2),
+     ?_assertEqual({ok, 0, "testval"}, Get3),
+     ?_assertEqual({ok, 0, "testval"}, Get4)
     ].
+
+test_replace_add(Instance) ->
+    ok = cberl:set(Instance, "testkey", 0, "testval"),
+    AddFail = cberl:add(Instance, "testkey", 0, "testval"),
+    AddPass = cberl:add(Instance, "testkey1", 0, "testval"),
+    ReplaceFail = cberl:replace(Instance, "notestkey", 0, "testval"),
+    ok = cberl:replace(Instance, "testkey", 0, "testval1"),
+    Get1 = cberl:get(Instance, "testkey"),
+    [?_assertEqual({error, key_eexists}, AddFail),
+     ?_assertEqual(ok, AddPass),
+     ?_assertEqual({error, key_enoent}, ReplaceFail),
+     ?_assertEqual({ok, 0, "testval1"}, Get1)
+    ].
+
+test_append_prepend(Instance) ->
+    ok = cberl:set(Instance, "testkey", 0, "base"),
+    ok = cberl:append(Instance, 0, "testkey", "tail"),
+    Get1 = cberl:get(Instance, "testkey"),
+    ok = cberl:prepend(Instance, 0, "testkey", "head"),
+    Get2 = cberl:get(Instance, "testkey"),
+    [?_assertEqual({ok, 0, "basetail"}, Get1),
+     ?_assertEqual({ok, 0, "headbasetail"}, Get2)
+    ]. 
 %%%===================================================================
 %%% Helper Functions
 %%%===================================================================
