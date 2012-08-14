@@ -447,10 +447,9 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     ErlNifBinary value_binary;
     enif_alloc_binary(cb->size, &value_binary);
     memcpy(value_binary.data, cb->data, cb->size);
-    ERL_NIF_TERM term =  enif_make_tuple2(env, a_ok,
-            enif_make_tuple3(env, enif_make_int(env, cb->cas),
-                enif_make_int(env, cb->flag), 
-                enif_make_binary(env, &value_binary)));
+    ERL_NIF_TERM term =   enif_make_tuple3(env, enif_make_int(env, cb->cas),
+                                           enif_make_int(env, cb->flag), 
+                                           enif_make_binary(env, &value_binary));
     free(cb->data);
     return term;
 }
