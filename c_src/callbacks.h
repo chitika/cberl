@@ -11,6 +11,7 @@ struct libcouchbase_callback {
     size_t size;
     void *data;
     int flag;
+    int cas;
 };
 
 //libcouchbase callbacks
@@ -37,10 +38,11 @@ static void get_callback(libcouchbase_t instance,
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
     cb->flag = flags;
+    cb->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
-            cb->data = malloc(nbytes);
-            memcpy(cb->data, bytes, nbytes);
-            cb->size = nbytes;
+        cb->data = malloc(nbytes);
+        memcpy(cb->data, bytes, nbytes);
+        cb->size = nbytes;
     }
 }
 
@@ -57,6 +59,7 @@ static void arithmetic_callback(libcouchbase_t instance,
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
     cb->flag = 4;
+    cb->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
         cb->size = sizeof(libcouchbase_uint64_t);
         cb->data = malloc(cb->size);
@@ -98,6 +101,7 @@ static void storage_callback(libcouchbase_t instance,
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
+    cb->cas = cas;
 }
 
 static void remove_callback(libcouchbase_t instance,
