@@ -4,7 +4,12 @@
 -define('CBE_APPEND',   4).
 -define('CBE_PREPEND',  5).
 
+-opaque handle() :: binary().
+
+-record(instance, {handle :: handle(), 
+                   transcoder :: module()}).
+
 -type key() :: string().
 -type value() :: string() | list() | integer() | binary().
 -type operation_type() :: add | replace | set | append | prepend.
--opaque instance() :: binary().
+-type instance() :: #instance{}.

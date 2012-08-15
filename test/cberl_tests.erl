@@ -15,8 +15,8 @@ setup() ->
     Instance.
 
 clean_up(Instance) ->
-    ok = cberl:remove(Instance, "testkey"),
-    ok = cberl:remove(Instance, "testkey1"),
+    cberl:remove(Instance, "testkey"),
+    cberl:remove(Instance, "testkey1"),
     ok = cberl:destroy(Instance).
 %%%===================================================================
 %%% Tests
@@ -51,7 +51,7 @@ test_replace_add(Instance) ->
     ].
 
 test_append_prepend(Instance) ->
-    ok = cberl:set(Instance, "testkey", 0, "base"),
+    ok = cberl:set(Instance, "testkey", 0, "base", str),
     ok = cberl:append(Instance, 0, "testkey", "tail"),
     Get1 = cberl:get(Instance, "testkey"),
     ok = cberl:prepend(Instance, 0, "testkey", "head"),
