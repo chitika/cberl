@@ -4,10 +4,6 @@
 -define('CBE_APPEND',   4).
 -define('CBE_PREPEND',  5).
 
--define('CBE_JSON',     0).
--define('CBE_GZIP',     1).
--define('CBE_RAW',      2).
-
 -type key() :: string().
 -type value() :: string() | list() | integer() | binary().
 -type operation_type() :: add | replace | set | append | prepend.

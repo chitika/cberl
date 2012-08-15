@@ -59,7 +59,7 @@ static void arithmetic_callback(libcouchbase_t instance,
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
-    cb->flag = 0;
+    cb->flag = 1;
     cb->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
         cb->data = malloc(20*sizeof(char));

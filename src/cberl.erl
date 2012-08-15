@@ -156,9 +156,9 @@ unlock(Instance, Key, Cas) ->
 -spec store(instance(), operation_type(), key(), value(), atom(), 
             integer(), integer()) -> ok | {error, _}.
 store(Instance, Op, Key, Value, Transcoder, Exp, Cas) ->
-    StoreValue = encode_value(Transcoder, Value), 
+    StoreValue = cberl_transcoder:encode_value(Transcoder, Value), 
     cberl_nif:store(Instance, operation_value(Op), Key, StoreValue, 
-                    transcoder_flag(Transcoder), Exp, Cas).
+                    cberl_transcoder:flag(Transcoder), Exp, Cas).
 
 %% @doc get the value for the given key
 %% Instance libcouchbase instance to use
@@ -171,7 +171,7 @@ mget(Instance, Key, Exp) ->
     case cberl_nif:mget(Instance, Key, Exp) of
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
-            DecodedValue = decode_value(Flag, Value),
+            DecodedValue = cberl_transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
     end.
 
@@ -185,7 +185,7 @@ getl(Instance, Key, Exp) ->
     case cberl_nif:getl(Instance, Key, Exp) of
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
-            DecodedValue = decode_value(Flag, Value),
+            DecodedValue = cberl_transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
     end.
    
@@ -203,7 +203,7 @@ arithmetic(Instance, Key, OffSet, Exp, Create, Initial) ->
     case cberl_nif:arithmetic(Instance, Key, OffSet, Exp, Create, Initial) of
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
-            DecodedValue = decode_value(Flag, Value),
+            DecodedValue = cberl_transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
     end.
 
@@ -229,24 +229,3 @@ operation_value(replace) -> ?'CBE_REPLACE';
 operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
-
-encode_value(json, Value) -> jiffy:encode(Value);
-encode_value(gzip, _Value) -> <<"zipped value here">>;
-encode_value(raw_binary, Value) -> term_to_binary(Value);
-encode_value(Custom, Value) ->
-    {_Flag, {Module, Function}} = application:get_env(Custom),
-    apply(Module, Function, [Value]).
-
-decode_value(?'CBE_JSON', Value) -> jiffy:decode(Value);
-decode_value(?'CBE_GZIP', Value) -> <<"unzipped value here">>;
-decode_value(?'CBE_RAW', Value) -> binary_to_term(Value).
-
-%decode_value(Custom, Value) -> jsx:to_term(Value);
-transcoder_flag(json) -> ?'CBE_JSON';
-transcoder_flag(gzip) -> ?'CBE_GZIP';
-transcoder_flag(raw_binary) -> ?'CBE_RAW'.
-
-%transcoder_flag(Custom) -> 
-%    {Flag, {_Module, _Function}} = application:get_env(Custom),
-%    Flag.
-
