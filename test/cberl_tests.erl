@@ -29,12 +29,9 @@ test_set_and_get(Instance) ->
     Get2 = cberl:get(Instance, "testkey"),
     ok = cberl:set(Instance, "testkey", 0, "testval", raw_binary),
     Get3 = cberl:get(Instance, "testkey"),
-    ok = cberl:set(Instance, "testkey", 0, "testval", gzip),
-    Get4 = cberl:get(Instance, "testkey"),
     [?_assertEqual({ok, 0, "testval"}, Get1),
      ?_assertEqual({ok, 0, "testval"}, Get2),
-     ?_assertEqual({ok, 0, "testval"}, Get3),
-     ?_assertEqual({ok, 0, "testval"}, Get4)
+     ?_assertEqual({ok, 0, "testval"}, Get3)
     ].
 
 test_replace_add(Instance) ->
