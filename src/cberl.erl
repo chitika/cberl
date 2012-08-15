@@ -11,7 +11,7 @@
 %store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5]).
 %update operations
--export([append/4, append/5, prepend/4, prepend/5, mtouch/3]).
+-export([append/4, prepend/4, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, get/2, unlock/3]).
@@ -84,22 +84,12 @@ set(Instance, Key, Exp, Value, Transcoder) ->
 %% @equiv append(Instance, Key, Value, 0)
 -spec append(instance(), integer(), key(), value()) -> ok | {error, _}.
 append(Instance, Cas, Key, Value) ->
-    append(Instance, Cas, Key, Value, json).
-
-%% @equiv store(Instance, append, Key, Value, Transcoder, 0, Cas)
--spec append(instance(), integer(), key(), value(), atom() ) -> ok | {error, _}.
-append(Instance, Cas, Key, Value, Transcoder) ->
-    store(Instance, append, Key, Value, Transcoder, 0, Cas).
+    store(Instance, append, Key, Value, str, 0, Cas).
 
 %% @equiv prepend(Instance, Cas, Key, Value, json)
 -spec prepend(instance(), integer(), key(), value()) -> ok | {error, _}.
 prepend(Instance, Cas, Key, Value) ->
-    prepend(Instance, Cas, Key, Value, json).
-
-%% @equiv store(Instance, prepend, Key, Value, Transcoder, 0, Cas)
--spec prepend(instance(), integer(), key(), value(), integer()) -> ok | {error, _}.
-prepend(Instance, Cas, Key, Value, Transcoder) ->
-    store(Instance, prepend, Key, Value, Transcoder, 0, Cas).
+    store(Instance, prepend, Key, Value, str, 0, Cas).
 
 %% @doc Touch (set expiration time) on the given key
 %% Instance libcouchbase instance to use
