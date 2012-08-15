@@ -1,6 +1,7 @@
 #ifndef CALLBACKS_H
 #define CALLBACKS_H
 
+#include <stdio.h>
 #include "config.h"
 #include <string.h>
 #include <libcouchbase/couchbase.h>
@@ -58,12 +59,13 @@ static void arithmetic_callback(libcouchbase_t instance,
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
-    cb->flag = 4;
+    cb->flag = 0;
     cb->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
-        cb->size = sizeof(libcouchbase_uint64_t);
-        cb->data = malloc(cb->size);
-        memcpy(cb->data, &value, cb->size);
+        cb->data = malloc(20*sizeof(char));
+        memset(cb->data, 0, 20);
+        sprintf(cb->data, "%lu", value);
+        cb->size = strlen(cb->data); 
     }
 }
 static void unlock_callback(libcouchbase_t instance,

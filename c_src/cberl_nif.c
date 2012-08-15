@@ -1,6 +1,5 @@
 #include "erl_nif.h"
 #include "callbacks.h" 
-#include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -13,8 +12,6 @@ typedef struct handle {
     libcouchbase_t instance;
     ErlNifMutex * mutex;
 } handle_t;
-
-
 
 static void init_atoms(ErlNifEnv* env);
 
@@ -340,23 +337,15 @@ NIF(cberl_nif_arithmetic) {
     nkey += 1;
     key = (char *) malloc(nkey);
     assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);       
-
     assert_badarg(enif_get_int64(env, argv[2], &delta), env);        
-
     assert_badarg(enif_get_uint64(env, argv[3], &exp), env);       
-    
-    assert_badarg(enif_get_int(env, argv[4], &create), env);   {
-        create = 0;
-    }
-    
-    assert_badarg(enif_get_uint64(env, argv[5], &initial), env);   {
-        initial = 0;
-    }
+    assert_badarg(enif_get_int(env, argv[4], &create), env);   
+    assert_badarg(enif_get_uint64(env, argv[5], &initial), env);   
     enif_mutex_lock(handle->mutex);
     ret = libcouchbase_arithmetic(handle->instance,
                                     &cb,
                                     key,
-                                    strlen(key),
+                                    nkey,
                                     delta,
                                     exp, 
                                     create,

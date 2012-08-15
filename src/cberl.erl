@@ -6,17 +6,15 @@
 
 -module(cberl).
 -include("cberl.hrl").
--export([new/0, new/1, new/3, new/4, destroy/1]).
--export([store/7, mget/3, getl/3]).
+-export([new/0, new/1, new/3, new/4, remove/2, destroy/1]).
+-export([store/7, mget/3, getl/3, arithmetic/6]).
 %store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5]).
 %update operations
 -export([append/4, append/5, prepend/4, prepend/5, mtouch/3]).
+-export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, get/2, unlock/3]).
--export([
-         arithmetic/3, arithmetic/4,  arithmetic/5, arithmetic/7,
-         remove/2]).
 
 
 %% @equiv new("localhost:8091", "", "", "")
@@ -111,6 +109,24 @@ prepend(Instance, Cas, Key, Value, Transcoder) ->
 mtouch(Instance, Key, ExpTime) ->
     cberl_nif:mtouch(Instance, Key, ExpTime).
 
+incr(Instance, Key, OffSet) ->
+    arithmetic(Instance, Key, OffSet, 0, 0, 0).
+
+incr(Instance, Key, OffSet, Default) ->
+    arithmetic(Instance, Key, OffSet, 0, 1, Default).
+
+incr(Instance, Key, OffSet, Default, Exp) ->
+    arithmetic(Instance, Key, OffSet, Exp, 1, Default).
+
+decr(Instance, Key, OffSet) ->
+    arithmetic(Instance, Key, -OffSet, 0, 0, 0).
+
+decr(Instance, Key, OffSet, Default) ->
+    arithmetic(Instance, Key, -OffSet, 0, 1, Default).
+
+decr(Instance, Key, OffSet, Default, Exp) ->
+    arithmetic(Instance, Key, -OffSet, Exp, 1, Default).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% RETRIEVAL METHODS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,34 +199,23 @@ getl(Instance, Key, Exp) ->
             {ok, Cas, DecodedValue}
     end.
    
-%% @equiv arithmetic(Instance, "", Key, Delta, 0, 0, 0)
--spec arithmetic(instance(), key(), integer()) -> ok | {error, _}.
-arithmetic(Instance, Key, Delta) ->
-    arithmetic(Instance, "", Key, Delta, 0, 0, 0).
-
-%% @equiv arithmetic(Instance, "", Key, Delta, Exp, 0, 0)
--spec arithmetic(instance(), key(), integer(), integer()) -> ok | {error, _}.
-arithmetic(Instance, Key, Delta, Exp) ->
-    arithmetic(Instance, "", Key, Delta, Exp, 0, 0).
-
-%% @equiv arithmetic(Instance, "", Key, Delta, Exp, 1, Initial)
--spec arithmetic(instance(), key(), integer(), integer(), integer()) -> ok | {error, _}.
-arithmetic(Instance, Key, Delta, Exp, Initial) ->
-    arithmetic(Instance, "", Key, Delta, Exp, 1, Initial).
-
 %% @doc perform an arithmetic operation on the given key
 %% Instance libcouchbase instance to use
-%% HashKey the key to use for hashing
 %% Key key to perform on
 %% Delta The amount to add / subtract
 %% Exp When the object should expire
 %% Create set to true if you want the object to be created if it
 %%        doesn't exist.
 %% Initial The initial value of the object if we create it       
--spec arithmetic(instance(), key(), key(), integer(), integer(), integer(), integer()) ->
+-spec arithmetic(instance(), key(), integer(), integer(), integer(), integer()) ->
    ok | {error, _}.
-arithmetic(Instance, HashKey, Key, Delta, Exp, Create, Initial) ->
-    cberl_nif:arithmetic(Instance, HashKey, Key, Delta, Exp, Create, Initial).
+arithmetic(Instance, Key, OffSet, Exp, Create, Initial) ->
+    case cberl_nif:arithmetic(Instance, Key, OffSet, Exp, Create, Initial) of
+        {error, Error} -> {error, Error};
+        {ok, {Cas, Flag, Value}} ->
+            DecodedValue = decode_value(Flag, Value),
+            {ok, Cas, DecodedValue}
+    end.
 
 %% @doc remove the value for given key
 %% Instance libcouchbase instance to use
@@ -242,7 +247,7 @@ encode_value(Custom, Value) ->
     {_Flag, {Module, Function}} = application:get_env(Custom),
     apply(Module, Function, [Value]).
 
-decode_value(?'CBE_JSON', Value) -> io:format("~p~n", [Value]), jiffy:decode(Value);
+decode_value(?'CBE_JSON', Value) -> jiffy:decode(Value);
 decode_value(?'CBE_GZIP', Value) -> <<"unzipped value here">>;
 decode_value(?'CBE_RAW', Value) -> binary_to_term(Value).
 
