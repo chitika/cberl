@@ -38,7 +38,7 @@ static void get_callback(libcouchbase_t instance,
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
-    cb->flag = flags;
+    cb->flag = flags == 0 ? 1 : flags;
     cb->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
         cb->data = malloc(nbytes);
