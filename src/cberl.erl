@@ -170,7 +170,7 @@ store(#instance{handle = Handle, transcoder = Transcoder}, Op, Key, Value, Trans
 %%      pass a negative number for infinity
 -spec mget(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 mget(#instance{handle = Handle, transcoder = Transcoder}, Key, Exp) ->
-    case cberl_nif:mget(Handle, Key, Exp) of
+    case cberl_nif:mget(Handle, [Key], Exp) of
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
             DecodedValue = Transcoder:decode_value(Flag, Value),

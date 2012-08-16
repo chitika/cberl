@@ -164,32 +164,41 @@ NIF(cberl_nif_mget)
 {
     handle_t * handle;
     struct libcouchbase_callback cb; 
-    void * key;
-    unsigned int nkey; 
+    unsigned int numkeys; 
     int exp;
 
     libcouchbase_error_t ret; 
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
-    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
-    nkey += 1;
-    key = (char *) malloc(nkey);
-    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);           
+    assert_badarg(enif_get_list_length(env, argv[1], &numkeys), env);       
+    void** keys = malloc(sizeof(char*) * numkeys);
+    size_t* nkeys = malloc(sizeof(size_t) * numkeys);
+    ERL_NIF_TERM* currKey;
+    ERL_NIF_TERM tail = argv[1];
+    unsigned int keylen;
+    int i = 0;
+    while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
+        assert_badarg(enif_get_list_length(env, *currKey, &keylen), env);       
+        nkeys[i] = keylen + 1;
+        keys[i] = malloc(sizeof(char) * nkeys[i]);
+        assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env);           
+        i++;
+    }
     assert_badarg(enif_get_int(env, argv[2], &exp), env);       
-    
-    const char* keys[1];
-    size_t nkeys[1];
-    keys[0] = key;
-    nkeys[0] = nkey;
     
     enif_mutex_lock(handle->mutex); 
     ret = libcouchbase_mget(handle->instance,
                              &cb,
-                             1,
+                             numkeys,
                              (const void*const*)keys,
                              nkeys,
                              exp == 0 ? NULL : (libcouchbase_time_t*)&exp); 
-    free(key);
+    free(nkeys);
+    for(i =0; i< numkeys; i++) {
+        free(keys[i]);
+    }
+    free(keys);
+
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return_lcb_error(env, ret);
@@ -198,8 +207,7 @@ NIF(cberl_nif_mget)
     enif_mutex_unlock(handle->mutex); 
     if(cb.error != LIBCOUCHBASE_SUCCESS) {
         return return_lcb_error(env, cb.error);
-    } 
-    
+    }
     return enif_make_tuple2(env, a_ok, return_value(env, &cb)); 
 }
 
@@ -434,9 +442,10 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     ErlNifBinary value_binary;
+    ERL_NIF_TERM term;
     enif_alloc_binary(cb->size, &value_binary);
     memcpy(value_binary.data, cb->data, cb->size);
-    ERL_NIF_TERM term =   enif_make_tuple3(env, enif_make_int(env, cb->cas),
+    term  =   enif_make_tuple3(env, enif_make_int(env, cb->cas),
                                            enif_make_int(env, cb->flag), 
                                            enif_make_binary(env, &value_binary));
     free(cb->data);
