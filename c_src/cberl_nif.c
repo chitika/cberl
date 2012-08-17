@@ -163,7 +163,7 @@ NIF(cberl_nif_store)
 NIF(cberl_nif_mget)
 {
     handle_t * handle;
-    struct libcouchbase_callback cb; 
+    struct libcouchbase_callback_m cb; 
     unsigned int numkeys; 
     int exp;
 
@@ -186,6 +186,9 @@ NIF(cberl_nif_mget)
     }
     assert_badarg(enif_get_int(env, argv[2], &exp), env);       
     
+    cb.currKey = 0;
+    cb.ret = malloc(sizeof(struct libcouchbase_callback*) * numkeys);
+
     enif_mutex_lock(handle->mutex); 
     ret = libcouchbase_mget(handle->instance,
                              &cb,
@@ -205,10 +208,26 @@ NIF(cberl_nif_mget)
     }
     libcouchbase_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
-        return return_lcb_error(env, cb.error);
+    printf("o yea %s      %d      %d\n", (char*)cb.ret[0]->key, cb.ret[0]->cas, cb.ret[0]->flag);
+    ERL_NIF_TERM* results;
+    ERL_NIF_TERM returnValue;
+
+    results = malloc(sizeof(ERL_NIF_TERM) * numkeys);
+    i = 0; 
+    for(; i < numkeys; i++) {
+        ErlNifBinary databin;
+        enif_alloc_binary(cb.ret[i]->size, &databin);
+        memcpy(databin.data, cb.ret[i]->data, cb.ret[i]->size);
+        free(cb.ret[i]->data);
+        results[i] = enif_make_tuple4(env, 
+                enif_make_int(env, cb.ret[i]->cas), 
+               enif_make_int(env, cb.ret[i]->flag), 
+               enif_make_string_len(env, cb.ret[i]->key, cb.ret[i]->nkey - 1, ERL_NIF_LATIN1),
+               enif_make_binary(env, &databin)); 
     }
-    return enif_make_tuple2(env, a_ok, return_value(env, &cb)); 
+    returnValue = enif_make_list_from_array(env, results, numkeys);
+    free(results);
+    return enif_make_tuple2(env, a_ok, returnValue);
 }
 
 NIF(cberl_nif_getl) {

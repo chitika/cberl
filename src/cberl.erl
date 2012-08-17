@@ -14,7 +14,7 @@
 -export([append/4, prepend/4, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 %retrieval operations
--export([get_and_touch/3, get_and_lock/3, get/2, unlock/3]).
+-export([get_and_touch/3, get_and_lock/3, multi_get/2, get/2, unlock/3]).
 
 
 %% @equiv new("localhost:8091", "", "", "")
@@ -125,11 +125,14 @@ decr(Instance, Key, OffSet, Default, Exp) ->
 
 -spec get_and_touch(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 get_and_touch(Instance, Key, Exp) -> 
-    mget(Instance, Key, Exp).
+    mget(Instance, [Key], Exp).
 
 -spec get(instance(), key()) -> {ok, integer(), value()} | {error, _}.
 get(Instance, Key) ->
-    mget(Instance, Key, 0).
+    hd(mget(Instance, [Key], 0)).
+
+multi_get(Instance, Keys) ->
+    mget(Instance, Keys, 0).
 
 -spec get_and_lock(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 get_and_lock(Instance, Key, Exp) ->
@@ -169,12 +172,14 @@ store(#instance{handle = Handle, transcoder = Transcoder}, Op, Key, Value, Trans
 %% Exp When the object should expire
 %%      pass a negative number for infinity
 -spec mget(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
-mget(#instance{handle = Handle, transcoder = Transcoder}, Key, Exp) ->
-    case cberl_nif:mget(Handle, [Key], Exp) of
+mget(#instance{handle = Handle, transcoder = Transcoder}, Keys, Exp) ->
+    case cberl_nif:mget(Handle, Keys, Exp) of
         {error, Error} -> {error, Error};
-        {ok, {Cas, Flag, Value}} ->
-            DecodedValue = Transcoder:decode_value(Flag, Value),
-            {ok, Cas, DecodedValue}
+        {ok, Results} ->
+            lists:map(fun({Cas, Flag, Key, Value}) ->
+                DecodedValue = Transcoder:decode_value(Flag, Value),
+                {Key, Cas, DecodedValue}
+                end, Results)
     end.
 
 %% @doc Get an item with a lock that has a timeout
