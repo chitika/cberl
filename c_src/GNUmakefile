@@ -1,17 +1,22 @@
 DEPS=../deps
 
-all: deps
+all: $(DEPS)/libcouchbase
 
 clean:
 	@rm -rf $(DEPS)
 
-deps:
-	@if [ ! -d "$(DEPS)/libvbucket" ]; then \
-		mkdir -p $(DEPS);\
-		git clone https://github.com/couchbase/libvbucket.git $(DEPS)/libvbucket;\
-		git clone https://github.com/couchbase/libcouchbase.git $(DEPS)/libcouchbase;\
-		git clone https://github.com/nmathewson/Libevent.git $(DEPS)/libevent;\
-		cd $(DEPS)/libevent && ./autogen.sh && ./configure && make && make install;\
-		cd ../libvbucket && ./config/autorun.sh && ./configure && make && make install;\
-		cd ../libcouchbase && ./config/autorun.sh  && ./configure --disable-couchbasemock && make && make install;\
-	fi
+$(DEPS)/libevent:
+	@mkdir -p $(DEPS)
+	@git clone https://github.com/nmathewson/Libevent.git $(DEPS)/libevent
+	@cd $(DEPS)/libevent && ./autogen.sh && ./configure && make
+	
+$(DEPS)/libvbucket: $(DEPS)/libevent
+	@git clone https://github.com/couchbase/libvbucket.git $(DEPS)/libvbucket
+	@cd $(DEPS)/libvbucket && ./config/autorun.sh && ./configure && make
+
+$(DEPS)/libcouchbase: $(DEPS)/libvbucket
+	@git clone https://github.com/couchbase/libcouchbase.git $(DEPS)/libcouchbase
+	@cd	$(DEPS)/libcouchbase && ./config/autorun.sh  && ./configure\
+	   	CPPFLAGS='-I../libvbucket/include -I../libevent/include'\
+	   	LDFLAGS='-L../libvbucket/.libs -L../libevent/.libs'\
+		&& make
