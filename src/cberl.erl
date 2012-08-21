@@ -176,9 +176,14 @@ mget(#instance{handle = Handle, transcoder = Transcoder}, Keys, Exp) ->
     case cberl_nif:mget(Handle, Keys, Exp) of
         {error, Error} -> {error, Error};
         {ok, Results} ->
-            lists:map(fun({Cas, Flag, Key, Value}) ->
-                DecodedValue = Transcoder:decode_value(Flag, Value),
-                {Key, Cas, DecodedValue}
+            lists:map(fun(Result) ->
+                        case Result of
+                            {Cas, Flag, Key, Value} ->
+                                DecodedValue = Transcoder:decode_value(Flag, Value),
+                                {Key, Cas, DecodedValue};
+                            {_Key, {error, _Error}} ->
+                                Result
+                        end
                 end, Results)
     end.
 
