@@ -11,10 +11,16 @@ struct libcouchbase_callback {
     libcouchbase_error_t error;
     size_t size;
     void *data;
+    void *key;
+    size_t nkey;
     int flag;
     int cas;
 };
 
+struct libcouchbase_callback_m {
+    int currKey;
+    struct libcouchbase_callback** ret;
+};
 //libcouchbase callbacks
 static void error_callback(libcouchbase_t instance,
                            libcouchbase_error_t error,
@@ -35,16 +41,21 @@ static void get_callback(libcouchbase_t instance,
                          libcouchbase_cas_t cas)
 {
     (void)key; (void)nkey; (void)flags; (void)cas;
-    struct libcouchbase_callback *cb;
-    cb = (struct libcouchbase_callback *)cookie;
-    cb->error = error;
-    cb->flag = flags == 0 ? 1 : flags;
-    cb->cas = cas;
+    struct libcouchbase_callback_m *cbm;
+    cbm = (struct libcouchbase_callback_m *)cookie;
+    cbm->ret[cbm->currKey] = malloc(sizeof(struct libcouchbase_callback));
+    cbm->ret[cbm->currKey]->key = malloc(nkey);
+    memcpy(cbm->ret[cbm->currKey]->key, key, nkey);
+    cbm->ret[cbm->currKey]->nkey = nkey;
+    cbm->ret[cbm->currKey]->error = error;
+    cbm->ret[cbm->currKey]->flag = flags == 0 ? 1 : flags;
+    cbm->ret[cbm->currKey]->cas = cas;
     if (error == LIBCOUCHBASE_SUCCESS) {
-        cb->data = malloc(nbytes);
-        memcpy(cb->data, bytes, nbytes);
-        cb->size = nbytes;
+        cbm->ret[cbm->currKey]->data = malloc(nbytes);
+        memcpy(cbm->ret[cbm->currKey]->data, bytes, nbytes);
+        cbm->ret[cbm->currKey]->size = nbytes;        
     }
+    cbm->currKey += 1;
 }
 
 static void arithmetic_callback(libcouchbase_t instance,
@@ -64,7 +75,7 @@ static void arithmetic_callback(libcouchbase_t instance,
     if (error == LIBCOUCHBASE_SUCCESS) {
         cb->data = malloc(20*sizeof(char));
         memset(cb->data, 0, 20);
-        sprintf(cb->data, "%lu", value);
+        sprintf(cb->data, "%llu", value);
         cb->size = strlen(cb->data); 
     }
 }
