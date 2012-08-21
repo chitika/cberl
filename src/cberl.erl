@@ -14,7 +14,7 @@
 -export([append/4, prepend/4, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 %retrieval operations
--export([get_and_touch/3, get_and_lock/3, multi_get/2, get/2, unlock/3]).
+-export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3]).
 
 
 %% @equiv new("localhost:8091", "", "", "")
@@ -131,7 +131,7 @@ get_and_touch(Instance, Key, Exp) ->
 get(Instance, Key) ->
     hd(mget(Instance, [Key], 0)).
 
-multi_get(Instance, Keys) ->
+mget(Instance, Keys) ->
     mget(Instance, Keys, 0).
 
 -spec get_and_lock(instance(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
