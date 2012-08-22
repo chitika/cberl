@@ -183,11 +183,11 @@ NIF(cberl_nif_mget)
     nkeys = malloc(sizeof(size_t) * numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
     tail = argv[1];
-    unsigned int keylen;
+    unsigned int arglen;
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        assert_badarg(enif_get_list_length(env, *currKey, &keylen), env);       
-        nkeys[i] = keylen + 1;
+        assert_badarg(enif_get_list_length(env, *currKey, &arglen), env);       
+        nkeys[i] = arglen + 1;
         keys[i] = malloc(sizeof(char) * nkeys[i]);
         assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env);           
         i++;
@@ -332,7 +332,7 @@ NIF(cberl_nif_mtouch)
     unsigned int numkeys;
     void** keys;
     size_t* nkeys;
-    int exp;
+    int64_t *exp;
 
     libcouchbase_error_t ret; //for checking responses
     
@@ -341,23 +341,30 @@ NIF(cberl_nif_mtouch)
     ERL_NIF_TERM returnValue;
     ERL_NIF_TERM tail;
     
+    unsigned int arglen;
+    
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     assert_badarg(enif_get_list_length(env, argv[1], &numkeys), env);       
     keys = malloc(sizeof(char*) * numkeys);
     nkeys = malloc(sizeof(size_t) * numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
     tail = argv[1];
-    unsigned int keylen;
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        assert_badarg(enif_get_list_length(env, *currKey, &keylen), env);       
-        nkeys[i] = keylen + 1;
+        assert_badarg(enif_get_list_length(env, *currKey, &arglen), env);       
+        nkeys[i] = arglen + 1;
         keys[i] = malloc(sizeof(char) * nkeys[i]);
-        assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env);           
+        assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env); 
         i++;
     } 
-   
-    assert_badarg(enif_get_int(env, argv[2], &exp), env);        
+    
+    exp = malloc(sizeof(int64_t) * numkeys);
+    tail = argv[2];
+    i = 0;
+    while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
+        assert_badarg(enif_get_int64(env, *currKey, &exp[i]), env);
+        i++;
+    }
 
     cb.currKey = 0;
     cb.ret = malloc(sizeof(struct libcouchbase_callback*) * numkeys);
@@ -368,7 +375,7 @@ NIF(cberl_nif_mtouch)
                              numkeys,
                              (const void*const*)keys,
                              nkeys,
-                             (libcouchbase_time_t*)&exp); 
+                             (libcouchbase_time_t*)exp); 
     
     if (ret != LIBCOUCHBASE_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 

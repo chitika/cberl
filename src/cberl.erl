@@ -99,11 +99,19 @@ prepend(Instance, Cas, Key, Value) ->
 %% ExpTime a new expiration time for the item 
 -spec mtouch(instance(), key(), integer()) -> ok | {error, _}.
 touch(Instance, Key, ExpTime) ->
-    {ok, Return} = mtouch(Instance, [Key], ExpTime),
+    {ok, Return} = mtouch(Instance, [Key], [ExpTime]),
     {ok, hd(Return)}.
 
-mtouch(#instance{handle = Handle}, Keys, ExpTime) ->
-    cberl_nif:mtouch(Handle, Keys, ExpTime).
+mtouch(Instance, Keys, ExpTime) when is_integer(ExpTime) ->
+    mtouch(Instance, Keys, [ExpTime]);
+mtouch(#instance{handle = Handle}, Keys, ExpTimes) ->
+    ExpTimesE = case length(Keys) - length(ExpTimes) of
+        R when R > 0 ->
+            ExpTimes ++ lists:duplicate(R, lists:last(ExpTimes));
+        _ -> 
+            ExpTimes
+    end, 
+    cberl_nif:mtouch(Handle, Keys, ExpTimesE).
 
 incr(Instance, Key, OffSet) ->
     arithmetic(Instance, Key, OffSet, 0, 0, 0).

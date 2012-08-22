@@ -104,6 +104,7 @@ static void touch_callback(libcouchbase_t instance,
     memcpy(cbm->ret[cbm->currKey]->key, key, nkey);
     cbm->ret[cbm->currKey]->nkey = nkey;
     cbm->ret[cbm->currKey]->error = error;
+    cbm->currKey += 1;
 }
 
 static void storage_callback(libcouchbase_t instance,
