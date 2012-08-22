@@ -97,9 +97,13 @@ static void touch_callback(libcouchbase_t instance,
                            libcouchbase_size_t nkey)
 {
     (void)instance; (void)key; (void)nkey; 
-    struct libcouchbase_callback *cb;
-    cb = (struct libcouchbase_callback *)cookie;
-    cb->error = error;
+    struct libcouchbase_callback_m *cbm;
+    cbm = (struct libcouchbase_callback_m *)cookie;
+    cbm->ret[cbm->currKey] = malloc(sizeof(struct libcouchbase_callback));
+    cbm->ret[cbm->currKey]->key = malloc(nkey);
+    memcpy(cbm->ret[cbm->currKey]->key, key, nkey);
+    cbm->ret[cbm->currKey]->nkey = nkey;
+    cbm->ret[cbm->currKey]->error = error;
 }
 
 static void storage_callback(libcouchbase_t instance,
