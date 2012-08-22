@@ -11,7 +11,7 @@
 %store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5]).
 %update operations
--export([append/4, prepend/4, mtouch/3]).
+-export([append/4, prepend/4, touch/3, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3]).
@@ -98,8 +98,20 @@ prepend(Instance, Cas, Key, Value) ->
 %% Key key to touch
 %% ExpTime a new expiration time for the item 
 -spec mtouch(instance(), key(), integer()) -> ok | {error, _}.
-mtouch(#instance{handle = Handle}, Key, ExpTime) ->
-    cberl_nif:mtouch(Handle, Key, ExpTime).
+touch(Instance, Key, ExpTime) ->
+    {ok, Return} = mtouch(Instance, [Key], [ExpTime]),
+    {ok, hd(Return)}.
+
+mtouch(Instance, Keys, ExpTime) when is_integer(ExpTime) ->
+    mtouch(Instance, Keys, [ExpTime]);
+mtouch(#instance{handle = Handle}, Keys, ExpTimes) ->
+    ExpTimesE = case length(Keys) - length(ExpTimes) of
+        R when R > 0 ->
+            ExpTimes ++ lists:duplicate(R, lists:last(ExpTimes));
+        _ -> 
+            ExpTimes
+    end, 
+    cberl_nif:mtouch(Handle, Keys, ExpTimesE).
 
 incr(Instance, Key, OffSet) ->
     arithmetic(Instance, Key, OffSet, 0, 0, 0).
