@@ -26,7 +26,7 @@ $(DEPS)/libvbucket: $(DEPS)/libevent
 
 $(DEPS)/libcouchbase/.libs/libcouchbase.la: $(DEPS)/libvbucket
 	@git clone https://github.com/couchbase/libcouchbase.git $(DEPS)/libcouchbase
-	@cd	$(DEPS)/libcouchbase && ./config/autorun.sh  && ./configure\
+	@cd	$(DEPS)/libcouchbase && ./config/autorun.sh  && ./configure --enable-static\
 	   	CPPFLAGS='-I../libvbucket/include -I../libevent/include'\
 	   	LDFLAGS='-L../libvbucket/.libs -L../libevent/.libs' --disable-couchbasemock\
 		&& make
