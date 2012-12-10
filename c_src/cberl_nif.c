@@ -162,7 +162,7 @@ NIF(cberl_nif_store)
 
     commands[0] = &cmd;
     memset(&cmd, 0, sizeof(cmd));
-    cmd.v.v0.operation = LCB_SET;
+    cmd.v.v0.operation = operation;
     cmd.v.v0.key = key;
     cmd.v.v0.nkey = nkey;
     cmd.v.v0.bytes = bytes;
