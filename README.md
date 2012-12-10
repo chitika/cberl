@@ -9,7 +9,7 @@ Quick Start
 if you don't have libcouchbase already installed run ./rebar get-deps then:
 
     ./rebar compile
-    erl -pa ebin
+    erl -pa ebin deps/jiffy/ebin
 
 Example
 -------
@@ -17,12 +17,11 @@ Example
 Make sure you have couchbase running on localhost or use cberl:new(Host) instead.
 
     1> {ok, Instance} = cberl:new().
-    {ok,<<>>}
-    2> cberl:set(Instance, "fkey", "cberl").
+    {ok,{instance,<<>>,cberl_transcoder}}
+    2> cberl:set(Instance, "fkey", 0, "cberl").
     ok
-    3> cberl:mget(Instance, "fkey").
-    {ok,"cberl"}
-
+    3> cberl:get(Instance, "fkey").
+    {"fkey",0,"cberl"}
 
 For more information on all the functions -> ./rebar doc 
 
