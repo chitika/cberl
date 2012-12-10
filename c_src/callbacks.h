@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "config.h"
 #include <string.h>
-#include "libcouchbase/couchbase.h"
+#include <libcouchbase/couchbase.h>
 
 
 struct libcouchbase_callback {
