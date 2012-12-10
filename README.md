@@ -3,10 +3,12 @@ CBERL
 
 NIF based Erlang bindings for couchbase based on libcouchbase. 
 CBERL is at  very early stage of development, it only supports very basic functionality. Please submit bugs and patches if you find any.
+Only tested on mac so far.
 
 Quick Start
 ---------
 You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/next. You can then normally compile or include it in your project.
+    
     ./rebar compile
     erl -pa ebin deps/jiffy/ebin
 
@@ -29,8 +31,6 @@ TODO
 
 1) Write more tests
 
-2) Support batch operations, right now all operations are performed on single key
+2) Add informational methods
 
-3) Add informational methods
-
-4) Make function signatures more compatible with other couchbase clients
+3) Make function signatures more compatible with other couchbase clients
