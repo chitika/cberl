@@ -6,7 +6,7 @@ CBERL is at  very early stage of development, it only supports very basic functi
 
 Quick Start
 ---------
-You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/next
+You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/next. You can then normally compile or include it in your project.
     ./rebar compile
     erl -pa ebin deps/jiffy/ebin
 
