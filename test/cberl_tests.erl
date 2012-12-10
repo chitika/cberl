@@ -17,6 +17,7 @@ setup() ->
 clean_up(Instance) ->
     cberl:remove(Instance, "testkey"),
     cberl:remove(Instance, "testkey1"),
+    cberl:remove(Instance, "notestkey"),
     ok = cberl:destroy(Instance).
 %%%===================================================================
 %%% Tests

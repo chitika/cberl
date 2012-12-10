@@ -6,8 +6,7 @@ CBERL is at  very early stage of development, it only supports very basic functi
 
 Quick Start
 ---------
-if you don't have libcouchbase already installed run ./rebar get-deps then:
-
+You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/next
     ./rebar compile
     erl -pa ebin deps/jiffy/ebin
 
@@ -21,7 +20,7 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
     2> cberl:set(Instance, "fkey", 0, "cberl").
     ok
     3> cberl:get(Instance, "fkey").
-    {"fkey",0,"cberl"}
+    {ok,0,"cberl"}
 
 For more information on all the functions -> ./rebar doc 
 

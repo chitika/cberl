@@ -192,7 +192,7 @@ mget(#instance{handle = Handle, transcoder = Transcoder}, Keys, Exp) ->
                         case Result of
                             {Cas, Flag, Key, Value} ->
                                 DecodedValue = Transcoder:decode_value(Flag, Value),
-                                {Key, Cas, DecodedValue};
+                                {ok, Cas, DecodedValue};
                             {_Key, {error, _Error}} ->
                                 Result
                         end
