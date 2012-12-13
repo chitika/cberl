@@ -7,7 +7,7 @@ Only tested on mac so far.
 
 Quick Start
 ---------
-You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/next. You can then normally compile or include it in your project.
+You must have libcouchbase installed. For more information how to visit: http://www.couchbase.com/develop/c/current. You can then normally compile or include it in your project.
     
     ./rebar compile
     erl -pa ebin deps/jiffy/ebin
