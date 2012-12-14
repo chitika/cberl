@@ -30,9 +30,9 @@ test_set_and_get(_) ->
     Get2 = cberl:get(?POOLNAME, "testkey"),
     ok = cberl:set(?POOLNAME, "testkey", 0, "testval", raw_binary),
     Get3 = cberl:get(?POOLNAME, "testkey"),
-    [?_assertEqual({"testkey", 0, "testval"}, Get1),
-     ?_assertEqual({"testkey", 0, "testval"}, Get2),
-     ?_assertEqual({"testkey", 0, "testval"}, Get3)
+    [?_assertMatch({"testkey", _, "testval"}, Get1),
+     ?_assertMatch({"testkey", _, "testval"}, Get2),
+     ?_assertMatch({"testkey", _, "testval"}, Get3)
     ].
 
 test_replace_add(_) ->
@@ -45,7 +45,7 @@ test_replace_add(_) ->
     [?_assertEqual({error, key_eexists}, AddFail),
      ?_assertEqual(ok, AddPass),
      ?_assertEqual({error, key_enoent}, ReplaceFail),
-     ?_assertEqual({"testkey", 0, "testval1"}, Get1)
+     ?_assertMatch({"testkey", _, "testval1"}, Get1)
     ].
 
 test_append_prepend(_) ->
@@ -54,8 +54,8 @@ test_append_prepend(_) ->
     Get1 = cberl:get(?POOLNAME, "testkey"),
     ok = cberl:prepend(?POOLNAME, 0, "testkey", "head"),
     Get2 = cberl:get(?POOLNAME, "testkey"),
-    [?_assertEqual({"testkey", 0, "basetail"}, Get1),
-     ?_assertEqual({"testkey", 0, "headbasetail"}, Get2)
+    [?_assertMatch({"testkey", _, "basetail"}, Get1),
+     ?_assertMatch({"testkey", _, "headbasetail"}, Get2)
     ]. 
 %%%===================================================================
 %%% Helper Functions
