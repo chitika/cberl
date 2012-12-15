@@ -2,7 +2,6 @@
 #define CALLBACKS_H
 
 #include <stdio.h>
-#include "config.h"
 #include <string.h>
 #include <libcouchbase/couchbase.h>
 
