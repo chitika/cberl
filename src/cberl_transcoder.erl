@@ -20,7 +20,7 @@ encode_value(Encoders, Value) ->
 encode_value1(Flag, Value) when Flag band ?'CBE_STR' =/= 0 ->
     encode_value1(Flag bxor ?'CBE_STR', list_to_binary(Value));
 encode_value1(Flag, Value) when Flag band ?'CBE_JSON' =/= 0 ->
-    encode_value1(Flag bxor ?'CBE_JSON', jiffy:encode(Value));
+    encode_value1(Flag bxor ?'CBE_JSON', jsx:encode(Value));
 encode_value1(Flag, Value) when Flag band ?'CBE_RAW' =/= 0 ->
     encode_value1(Flag bxor ?'CBE_RAW', term_to_binary(Value));
 encode_value1(0, Value) ->
@@ -30,7 +30,7 @@ encode_value1(0, Value) ->
 decode_value(Flag, Value) when ?'CBE_RAW' band Flag =/= 0-> 
     decode_value(Flag bxor ?'CBE_RAW', binary_to_term(Value));
 decode_value(Flag, Value) when ?'CBE_JSON' band Flag =/= 0-> 
-    decode_value(Flag bxor ?'CBE_JSON', jiffy:decode(Value));                
+    decode_value(Flag bxor ?'CBE_JSON', jsx:decode(Value));                
 decode_value(Flag, Value) when ?'CBE_STR' band Flag =/= 0-> 
     decode_value(Flag bxor ?'CBE_STR', binary_to_list(Value));
 decode_value(0, Value) -> 
