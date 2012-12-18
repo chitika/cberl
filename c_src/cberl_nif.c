@@ -9,7 +9,7 @@ static ERL_NIF_TERM a_ok;
 static ERL_NIF_TERM a_error;
 
 typedef struct handle {
-    libcouchbase_t instance;
+    lcb_t instance;
     ErlNifMutex * mutex;
 } handle_t;
 
@@ -73,30 +73,54 @@ NIF(cberl_nif_new)
     handle_t * handle = enif_alloc_resource(cberl_handle,
                                                   sizeof(handle_t));
     
-    handle->instance = libcouchbase_create(host, user, pass, bucket, NULL);
+    lcb_error_t err;
+    struct lcb_create_st create_options;
+    struct lcb_create_io_ops_st io_opts;
+
+    io_opts.version = 0;
+    io_opts.v.v0.type = LCB_IO_OPS_DEFAULT;
+    io_opts.v.v0.cookie = NULL;
+
+    memset(&create_options, 0, sizeof(create_options));
+    err = lcb_create_io_ops(&create_options.v.v0.io, &io_opts);
+    if (err != LCB_SUCCESS) {
+      printf("failed create io ops\n");
+      fprintf(stderr, "Failed to create IO instance: %s\n",
+	      lcb_strerror(NULL, err));
+      return 1;
+    }
+
+    
+    create_options.v.v0.host = host;
+    create_options.v.v0.user = user;
+    create_options.v.v0.bucket = bucket;
+    create_options.v.v0.passwd = pass;
+
+    err = lcb_create(&(handle->instance), &create_options);
+
     free(host);
     free(user);
     free(pass);
     free(bucket);
 
-    if (handle->instance == NULL) {
+    if (err != LCB_SUCCESS) {
         return enif_make_tuple2(env, a_error,
                 enif_make_string(env, "Failed to create libcouchbase instance\n", ERL_NIF_LATIN1));
     }
 
-    (void)libcouchbase_set_error_callback(handle->instance, error_callback);
-    (void)libcouchbase_set_get_callback(handle->instance, get_callback); 
-    (void)libcouchbase_set_storage_callback(handle->instance, storage_callback); 
-    (void)libcouchbase_set_unlock_callback(handle->instance, unlock_callback);
-    (void)libcouchbase_set_touch_callback(handle->instance, touch_callback);
-    (void)libcouchbase_set_arithmetic_callback(handle->instance, arithmetic_callback);
-    (void)libcouchbase_set_remove_callback(handle->instance, remove_callback);
+    (void)lcb_set_error_callback(handle->instance, error_callback);
+    (void)lcb_set_get_callback(handle->instance, get_callback); 
+    (void)lcb_set_store_callback(handle->instance, store_callback); 
+    (void)lcb_set_unlock_callback(handle->instance, unlock_callback);
+    (void)lcb_set_touch_callback(handle->instance, touch_callback);
+    (void)lcb_set_arithmetic_callback(handle->instance, arithmetic_callback);
+    (void)lcb_set_remove_callback(handle->instance, remove_callback);
 
-    if (libcouchbase_connect(handle->instance) != LIBCOUCHBASE_SUCCESS) {
+    if (lcb_connect(handle->instance) != LCB_SUCCESS) {
         return enif_make_tuple2(env, a_error,
                 enif_make_string(env, "Failed to connect libcouchbase instance to server\n", ERL_NIF_LATIN1));
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     handle->mutex = enif_mutex_create("cberl_instance_mutex");
     return enif_make_tuple2(env, a_ok, enif_make_resource(env, handle));
 }
@@ -109,13 +133,13 @@ NIF(cberl_nif_store)
     void * key;
     unsigned int nkey;
     void * bytes;
-    libcouchbase_size_t nbytes;
-    libcouchbase_uint32_t flags;
+    lcb_size_t nbytes;
+    lcb_uint32_t flags;
     int exp;
-    libcouchbase_cas_t cas;
+    lcb_cas_t cas;
 
     ErlNifBinary value_binary;
-    libcouchbase_error_t ret; 
+    lcb_error_t ret; 
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);        
     assert_badarg(enif_get_int(env, argv[1], &operation), env);       
@@ -131,30 +155,37 @@ NIF(cberl_nif_store)
 
     assert_badarg(enif_get_uint(env, argv[4], &flags), env);       
     assert_badarg(enif_get_int(env, argv[5], &exp), env);                      
-    assert_badarg(enif_get_uint64(env, argv[6], (unsigned long*)&cas), env);       
+    assert_badarg(enif_get_uint64(env, argv[6], (ErlNifUInt64*)&cas), env);       
+
+    lcb_store_cmd_t cmd;
+    const lcb_store_cmd_t *commands[1];
+
+    commands[0] = &cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.v.v0.operation = operation;
+    cmd.v.v0.key = key;
+    cmd.v.v0.nkey = nkey;
+    cmd.v.v0.bytes = bytes;
+    cmd.v.v0.nbytes = nbytes;
+    cmd.v.v0.flags = flags;
+    cmd.v.v0.exptime = exp;
+    cmd.v.v0.cas = cas;
 
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_store(handle->instance,
-                                  &cb,
-                                  operation,
-                                  key, /* the key or _id of the document */
-                                  nkey, /* the key length */
-                                  bytes,
-                                  nbytes, /* length of */
-                                  flags,  /* flags,  */
-                                  exp,  /* expiration */
-                                  cas); /* and CAS values, see API reference */
+    ret = lcb_store(handle->instance, &cb, 1, commands);
     
     free(key);
     free(bytes);
     
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex);
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+
+    lcb_wait(handle->instance);
+
     enif_mutex_unlock(handle->mutex);
-    if (cb.error != LIBCOUCHBASE_SUCCESS) {
+    if (cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     }
     return a_ok;
@@ -169,7 +200,7 @@ NIF(cberl_nif_mget)
     size_t* nkeys;
     int exp;
 
-    libcouchbase_error_t ret;
+    lcb_error_t ret;
     
     ERL_NIF_TERM* results;
     ERL_NIF_TERM* currKey;
@@ -183,11 +214,11 @@ NIF(cberl_nif_mget)
     nkeys = malloc(sizeof(size_t) * numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
     tail = argv[1];
-    unsigned int keylen;
+    unsigned int arglen;
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        assert_badarg(enif_get_list_length(env, *currKey, &keylen), env);       
-        nkeys[i] = keylen + 1;
+        assert_badarg(enif_get_list_length(env, *currKey, &arglen), env);       
+        nkeys[i] = arglen + 1;
         keys[i] = malloc(sizeof(char) * nkeys[i]);
         assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env);           
         i++;
@@ -198,28 +229,33 @@ NIF(cberl_nif_mget)
     cb.currKey = 0;
     cb.ret = malloc(sizeof(struct libcouchbase_callback*) * numkeys);
 
-    enif_mutex_lock(handle->mutex); 
-    ret = libcouchbase_mget(handle->instance,
-                             &cb,
-                             numkeys,
-                             (const void*const*)keys,
-                             nkeys,
-                             exp == 0 ? NULL : (libcouchbase_time_t*)&exp); 
-    
-    
+    enif_mutex_lock(handle->mutex);
 
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    const lcb_get_cmd_t* commands[numkeys];
+    i = 0;
+    for (; i < numkeys; i++) {
+      lcb_get_cmd_t *get = calloc(1, sizeof(*get));
+      get->version = 0;
+      get->v.v0.key = keys[i];
+      get->v.v0.nkey = nkeys[i];
+      get->v.v0.exptime = exp;
+      commands[i] = get;
+    }
+
+    ret = lcb_get(handle->instance, &cb, numkeys, commands);
+
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
     
 
     results = malloc(sizeof(ERL_NIF_TERM) * numkeys);
     i = 0; 
     for(; i < numkeys; i++) {
-        if (cb.ret[i]->error == LIBCOUCHBASE_SUCCESS) {
+        if (cb.ret[i]->error == LCB_SUCCESS) {
             databin = malloc(sizeof(ErlNifBinary));
             enif_alloc_binary(cb.ret[i]->size, databin);
             memcpy(databin->data, cb.ret[i]->data, cb.ret[i]->size);
@@ -238,6 +274,7 @@ NIF(cberl_nif_mget)
         free(cb.ret[i]->key);
         free(cb.ret[i]);
         free(keys[i]);
+	free((lcb_get_cmd_t*) commands[i]);
     }
     returnValue = enif_make_list_from_array(env, results, numkeys);
     
@@ -257,7 +294,7 @@ NIF(cberl_nif_getl) {
     unsigned int nkey;
     int exp;
 
-    libcouchbase_error_t ret; 
+    lcb_error_t ret; 
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
@@ -267,19 +304,25 @@ NIF(cberl_nif_getl) {
     
     assert_badarg(enif_get_int(env, argv[3], &exp), env);       
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_getl(handle->instance,
-                             &cb,
-                             key,
-                             nkey, 
-                             exp == 0 ? NULL : (libcouchbase_time_t*)&exp); 
+
+    lcb_get_cmd_t cmd;
+    const lcb_get_cmd_t *commands[1];
+    commands[0] = &cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.v.v0.key = key;
+    cmd.v.v0.nkey = nkey;
+    cmd.v.v0.exptime = exp;
+    cmd.v.v0.lock = 1;
+    ret = lcb_get(handle->instance, &cb, 1, commands);
+ 
     free(key);
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
+    if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
     return enif_make_tuple2(env, a_ok, return_value(env, &cb));
@@ -295,7 +338,7 @@ NIF(cberl_nif_unlock)
     unsigned int nkey;
     int cas;
 
-    libcouchbase_error_t ret; //for checking responses
+    lcb_error_t ret; //for checking responses
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
@@ -305,20 +348,24 @@ NIF(cberl_nif_unlock)
     
     assert_badarg(enif_get_int(env, argv[2], &cas), env);       
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_unlock(handle->instance,
-                             &cb,
-                             key,
-                             nkey,
-                             cas); 
+
+    lcb_unlock_cmd_t unlock;
+    memset(&unlock, 0, sizeof(unlock));
+    unlock.v.v0.key = key;
+    unlock.v.v0.nkey = nkey;
+    unlock.v.v0.cas = cas;
+    const lcb_unlock_cmd_t* commands[] = { &unlock };
+    ret = lcb_unlock(handle->instance, &cb, 1, commands);
+
     free(key);
 
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
+    if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
     return a_ok;
@@ -328,43 +375,95 @@ NIF(cberl_nif_unlock)
 NIF(cberl_nif_mtouch)
 {
     handle_t * handle;
-    struct libcouchbase_callback cb; 
-    void * key;
-    unsigned int nkey;
-    int exp;
+    struct libcouchbase_callback_m cb; 
+    unsigned int numkeys;
+    void** keys;
+    size_t* nkeys;
+    int64_t *exp;
 
-    libcouchbase_error_t ret; //for checking responses
+    lcb_error_t ret; //for checking responses
+    
+    ERL_NIF_TERM* results;
+    ERL_NIF_TERM* currKey;
+    ERL_NIF_TERM returnValue;
+    ERL_NIF_TERM tail;
+    
+    unsigned int arglen;
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
-    assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
-    nkey += 1;
-    key = (char *) malloc(nkey);
-    assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);       
+    assert_badarg(enif_get_list_length(env, argv[1], &numkeys), env);       
+    keys = malloc(sizeof(char*) * numkeys);
+    nkeys = malloc(sizeof(size_t) * numkeys);
+    currKey = malloc(sizeof(ERL_NIF_TERM));
+    tail = argv[1];
+    int i = 0;
+    while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
+        assert_badarg(enif_get_list_length(env, *currKey, &arglen), env);       
+        nkeys[i] = arglen + 1;
+        keys[i] = malloc(sizeof(char) * nkeys[i]);
+        assert_badarg(enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1), env); 
+        i++;
+    } 
     
-    assert_badarg(enif_get_int(env, argv[2], &exp), env);        
+    exp = malloc(sizeof(int64_t) * numkeys);
+    tail = argv[2];
+    i = 0;
+    while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
+        assert_badarg(enif_get_int64(env, *currKey, &exp[i]), env);
+        i++;
+    }
 
-    const char* keys[1];
-    size_t nkeys[1];
-    keys[0] = key;
-    nkeys[0] = nkey;
+    cb.currKey = 0;
+    cb.ret = malloc(sizeof(struct libcouchbase_callback*) * numkeys);
+
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_mtouch(handle->instance,
-                             &cb,
-                             1,
-                             (const void*const*)keys,
-                             nkeys,
-                             (libcouchbase_time_t*)&exp); 
-    free(key);
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+
+    const lcb_touch_cmd_t* commands[numkeys];
+    i = 0;
+    for (; i < numkeys; i++) {
+      lcb_touch_cmd_t* touch = calloc(1, sizeof(*touch));
+      touch->version = 0;
+      touch->v.v0.key = keys[i];
+      touch->v.v0.nkey = nkeys[i];
+      touch->v.v0.exptime = exp[i];
+      commands[i] = touch;
+    }
+
+    ret = lcb_touch(handle->instance, &cb, numkeys, commands);
+    
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
-        return return_lcb_error(env, cb.error);
-    } 
-    return a_ok;
+    
+    results = malloc(sizeof(ERL_NIF_TERM) * numkeys);
+    i = 0; 
+    for(; i < numkeys; i++) {
+        if (cb.ret[i]->error == LCB_SUCCESS) {
+            results[i] = enif_make_tuple2(env,
+                    enif_make_string_len(env, cb.ret[i]->key, cb.ret[i]->nkey - 1, ERL_NIF_LATIN1),
+                    a_ok);
+        } else {
+            results[i] = enif_make_tuple2(env,
+                    enif_make_string_len(env, cb.ret[i]->key, cb.ret[i]->nkey - 1, ERL_NIF_LATIN1),
+                    return_lcb_error(env, cb.ret[i]->error));
+        }
+        free(cb.ret[i]->key);
+        free(cb.ret[i]);
+        free(keys[i]);
+	free((lcb_touch_cmd_t*) commands[i]);
+    }
+    returnValue = enif_make_list_from_array(env, results, numkeys);
+
+    free(results);
+    free(cb.ret);
+    free(currKey);
+    free(keys);
+    free(nkeys);
+
+    return enif_make_tuple2(env, a_ok, returnValue);
 }
 
 NIF(cberl_nif_arithmetic) {
@@ -377,34 +476,38 @@ NIF(cberl_nif_arithmetic) {
     int create;
     uint64_t initial; 
 
-    libcouchbase_error_t ret; //for checking responses
+    lcb_error_t ret; //for checking responses
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
     nkey += 1;
     key = (char *) malloc(nkey);
     assert_badarg(enif_get_string(env, argv[1], key, nkey, ERL_NIF_LATIN1), env);       
-    assert_badarg(enif_get_int64(env, argv[2], (long*)&delta), env);        
-    assert_badarg(enif_get_uint64(env, argv[3], (unsigned long *)&exp), env);       
+    assert_badarg(enif_get_int64(env, argv[2], (ErlNifSInt64*)&delta), env);        
+    assert_badarg(enif_get_uint64(env, argv[3], (ErlNifUInt64 *)&exp), env);       
     assert_badarg(enif_get_int(env, argv[4], &create), env);   
-    assert_badarg(enif_get_uint64(env, argv[5], (unsigned long *)&initial), env);   
+    assert_badarg(enif_get_uint64(env, argv[5], (ErlNifUInt64 *)&initial), env);   
     enif_mutex_lock(handle->mutex);
-    ret = libcouchbase_arithmetic(handle->instance,
-                                    &cb,
-                                    key,
-                                    nkey,
-                                    delta,
-                                    exp, 
-                                    create,
-                                    initial); 
+
+    lcb_arithmetic_cmd_t arithmetic;
+    const lcb_arithmetic_cmd_t* commands[1];
+    commands[0] = &arithmetic;
+    memset(&arithmetic, 0, sizeof(arithmetic));
+    arithmetic.v.v0.key = key;
+    arithmetic.v.v0.nkey = nkey;
+    arithmetic.v.v0.initial = initial;
+    arithmetic.v.v0.create = create;
+    arithmetic.v.v0.delta = delta;
+    ret = lcb_arithmetic(handle->instance, &cb, 1, commands);
+ 
     free(key);
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
+    if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
     return enif_make_tuple2(env, a_ok, return_value(env, &cb));
@@ -417,7 +520,7 @@ NIF(cberl_nif_remove) {
     unsigned int nkey;
     int cas;
 
-    libcouchbase_error_t ret; //for checking responses
+    lcb_error_t ret; //for checking responses
     
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     assert_badarg(enif_get_list_length(env, argv[1], &nkey), env);       
@@ -427,19 +530,25 @@ NIF(cberl_nif_remove) {
     
     assert_badarg(enif_get_int(env, argv[2], &cas), env);       
     enif_mutex_lock(handle->mutex); 
-    ret = libcouchbase_remove(handle->instance,
-                             &cb,
-                             key,
-                             nkey,
-                             cas); 
+    
+    lcb_remove_cmd_t remove;
+    const lcb_remove_cmd_t* commands[1];
+    commands[0] = &remove;
+    memset(&remove, 0, sizeof(remove));
+    remove.v.v0.key = key;
+    remove.v.v0.nkey = nkey;
+    remove.v.v0.cas = cas;
+
+    ret = lcb_remove(handle->instance, &cb, 1, commands);
+
     free(key);
-    if (ret != LIBCOUCHBASE_SUCCESS) {
+    if (ret != LCB_SUCCESS) {
         enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
-    libcouchbase_wait(handle->instance);
+    lcb_wait(handle->instance);
     enif_mutex_unlock(handle->mutex); 
-    if(cb.error != LIBCOUCHBASE_SUCCESS) {
+    if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
     return a_ok;
@@ -449,7 +558,7 @@ NIF(cberl_nif_destroy) {
     handle_t * handle;
     assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
     enif_mutex_lock(handle->mutex);
-    libcouchbase_destroy(handle->instance);
+    lcb_destroy(handle->instance);
     enif_mutex_unlock(handle->mutex);
     enif_mutex_destroy(handle->mutex);
     enif_release_resource(handle); 
@@ -493,57 +602,55 @@ static ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
 
 static ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value){
     switch (value) {
-        case LIBCOUCHBASE_SUCCESS:
+        case LCB_SUCCESS:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "success"));
-        case LIBCOUCHBASE_AUTH_CONTINUE:
+        case LCB_AUTH_CONTINUE:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "auth_continue"));
-        case LIBCOUCHBASE_AUTH_ERROR:
+        case LCB_AUTH_ERROR:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "auth_error"));
-        case LIBCOUCHBASE_DELTA_BADVAL:
+        case LCB_DELTA_BADVAL:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "delta_badval"));
-        case LIBCOUCHBASE_E2BIG:
+        case LCB_E2BIG:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "e2big"));
-        case LIBCOUCHBASE_EBUSY:
+        case LCB_EBUSY:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "ebusy"));
-        case LIBCOUCHBASE_EINTERNAL:
+        case LCB_EINTERNAL:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "einternal"));
-        case LIBCOUCHBASE_EINVAL:
+        case LCB_EINVAL:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "einval"));
-        case LIBCOUCHBASE_ENOMEM:
+        case LCB_ENOMEM:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "enomem"));
-        case LIBCOUCHBASE_ERANGE:
+        case LCB_ERANGE:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "erange"));
-        case LIBCOUCHBASE_ERROR:
+        case LCB_ERROR:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "error"));
-        case LIBCOUCHBASE_ETMPFAIL:
+        case LCB_ETMPFAIL:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "etmpfail"));
-        case LIBCOUCHBASE_KEY_EEXISTS:
+        case LCB_KEY_EEXISTS:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "key_eexists"));
-        case LIBCOUCHBASE_KEY_ENOENT:
+        case LCB_KEY_ENOENT:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "key_enoent"));
-        case LIBCOUCHBASE_LIBEVENT_ERROR:
-            return enif_make_tuple2(env, a_error, enif_make_atom(env, "libevent_error"));
-        case LIBCOUCHBASE_NETWORK_ERROR:
+        case LCB_NETWORK_ERROR:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "network_error"));
-        case LIBCOUCHBASE_NOT_MY_VBUCKET:
+        case LCB_NOT_MY_VBUCKET:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "not_my_vbucket"));
-        case LIBCOUCHBASE_NOT_STORED:
+        case LCB_NOT_STORED:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "not_stored"));
-        case LIBCOUCHBASE_NOT_SUPPORTED:
+        case LCB_NOT_SUPPORTED:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "not_supported"));
-        case LIBCOUCHBASE_UNKNOWN_COMMAND:
+        case LCB_UNKNOWN_COMMAND:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "unknown_command"));
-        case LIBCOUCHBASE_UNKNOWN_HOST:
+        case LCB_UNKNOWN_HOST:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "unknown_host"));
-        case LIBCOUCHBASE_PROTOCOL_ERROR:
+        case LCB_PROTOCOL_ERROR:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "protocol_error"));
-        case LIBCOUCHBASE_ETIMEDOUT:
+        case LCB_ETIMEDOUT:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "etimedout"));
-        case LIBCOUCHBASE_CONNECT_ERROR:
+        case LCB_CONNECT_ERROR:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "connect_error"));
-        case LIBCOUCHBASE_BUCKET_ENOENT:
+        case LCB_BUCKET_ENOENT:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "bucket_enoent"));
-        case LIBCOUCHBASE_CLIENT_ENOMEM:
+        case LCB_CLIENT_ENOMEM:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "client_enomem"));
         default:
             return enif_make_tuple2(env, a_error, enif_make_atom(env, "unknown_error"));            
