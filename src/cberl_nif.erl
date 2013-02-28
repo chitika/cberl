@@ -14,7 +14,7 @@ init() ->
                   Path ->
                       Path
               end,
-    erlang:load_nif(filename:join(PrivDir, "cberl_nif"), 0).
+    erlang:load_nif(filename:join(PrivDir, "cberl_drv"), 0).
 
 new() ->
     ?NIF_STUB.
