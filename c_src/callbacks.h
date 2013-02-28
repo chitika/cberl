@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <libcouchbase/couchbase.h>
-
 
 struct libcouchbase_callback {
     lcb_error_t error;
@@ -26,13 +24,14 @@ static void error_callback(lcb_t instance,
                            const char *errinfo)
 {
     (void)instance;
+    fprintf(stderr, "Fatal error\r\n");
     exit(EXIT_FAILURE);
 }
 
 static void get_callback(lcb_t instance,
                          const void *cookie,
                          lcb_error_t error,
-			 const lcb_get_resp_t *item
+             const lcb_get_resp_t *item
                          /*const void *key,
                          lcb_size_t nkey,
                          const void *bytes,
@@ -61,7 +60,7 @@ static void get_callback(lcb_t instance,
 static void arithmetic_callback(lcb_t instance,
                                 const void *cookie,
                                 lcb_error_t error,
-				const lcb_arithmetic_resp_t *resp
+                const lcb_arithmetic_resp_t *resp
                                 /*const void *key,
                                 lcb_size_t nkey,
                                 lcb_uint64_t value,
@@ -83,8 +82,8 @@ static void arithmetic_callback(lcb_t instance,
 static void unlock_callback(lcb_t instance,
                              const void *cookie,
                              lcb_error_t error,
-			    /*const void *key, size_t nkey*/
-			    const lcb_unlock_resp_t *resp)
+                /*const void *key, size_t nkey*/
+                const lcb_unlock_resp_t *resp)
 {
   (void)instance; //(void)key; (void)nkey; 
     struct libcouchbase_callback *cb;
@@ -95,7 +94,7 @@ static void unlock_callback(lcb_t instance,
 static void touch_callback(lcb_t instance,
                            const void *cookie,
                            lcb_error_t error,
-			   const lcb_touch_resp_t *resp
+               const lcb_touch_resp_t *resp
                            /*const void *key,
                            lcb_size_t nkey*/)
 {
@@ -111,11 +110,11 @@ static void touch_callback(lcb_t instance,
 }
 
 static void store_callback(lcb_t instance,
-			   const void *cookie,
-			   lcb_storage_t operation,
-			   lcb_error_t error,
-			   const lcb_store_resp_t *item
-			   /*const void *key, size_t nkey,
+               const void *cookie,
+               lcb_storage_t operation,
+               lcb_error_t error,
+               const lcb_store_resp_t *item
+               /*const void *key, size_t nkey,
                              uint64_t cas*/)
 {
   
@@ -129,9 +128,9 @@ static void store_callback(lcb_t instance,
 static void remove_callback(lcb_t instance,
                             const void *cookie,
                             lcb_error_t error,
-			    const lcb_remove_resp_t *resp
+                const lcb_remove_resp_t *resp
                             /*const void *key,
-			      lcb_size_t nkey*/)
+                  lcb_size_t nkey*/)
 {
   (void)instance; //(void)key; (void)nkey; 
     struct libcouchbase_callback *cb;
