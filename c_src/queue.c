@@ -34,7 +34,8 @@ void queue_put(queue_t* queue, void *data)
     enif_mutex_unlock(queue->mutex);
 }
 
-void* queue_get(queue_t* queue) {
+void* queue_get(queue_t* queue)
+{
     queue_item_t* item;
 
     enif_mutex_lock(queue->mutex);
@@ -55,4 +56,11 @@ void* queue_get(queue_t* queue) {
     enif_mutex_unlock(queue->mutex);
 
     return item->data;
+}
+
+void queue_destroy(queue_t* queue)
+{
+    enif_mutex_destroy(queue->mutex);
+    enif_cond_destroy(queue->cond);
+    enif_free(queue);
 }

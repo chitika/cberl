@@ -178,6 +178,7 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         i++;
     }
     
+    // TODO: free shit
     if (!enif_get_int(env, argv[1], &exp)) return NULL;
 
     mget_args_t* args = (mget_args_t*)enif_alloc(sizeof(mget_args_t));
@@ -257,8 +258,9 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
         free(cb.ret[i]->key);
         free(cb.ret[i]);
         free(keys[i]);
-    free((lcb_get_cmd_t*) commands[i]);
+        free((lcb_get_cmd_t*) commands[i]);
     }
+
     returnValue = enif_make_list_from_array(env, results, numkeys);
     
     free(results);
@@ -455,7 +457,7 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
         free(cb.ret[i]->key);
         free(cb.ret[i]);
         free(args->keys[i]);
-    free((lcb_touch_cmd_t*) commands[i]);
+        free((lcb_touch_cmd_t*) commands[i]);
     }
     returnValue = enif_make_list_from_array(env, results, args->numkeys);
 

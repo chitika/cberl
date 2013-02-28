@@ -1,5 +1,5 @@
 -module(cberl_nif).
--export([new/0, control/3]).
+-export([new/0, control/3, destroy/1]).
 
 -on_load(init/0).
 
@@ -20,4 +20,7 @@ new() ->
     ?NIF_STUB.
 
 control(_, _, _) ->
+    ?NIF_STUB.
+
+destroy(_) ->
     ?NIF_STUB.

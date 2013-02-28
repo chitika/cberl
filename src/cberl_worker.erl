@@ -163,8 +163,8 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State = #instance{handle = _Handle}) ->
-    %cberl_nif:destroy(Handle),
+terminate(_Reason, _State = #instance{handle = Handle}) ->
+    cberl_nif:destroy(Handle),
     ok.
 
 %%--------------------------------------------------------------------

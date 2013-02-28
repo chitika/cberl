@@ -23,30 +23,27 @@ NIF(cberl_nif_new)
     handle_t* handle = enif_alloc_resource(cberl_handle, sizeof(handle_t));
     handle->queue = queue_new();
 
-    handle->calltable[CMD_CONNECT]      = cb_connect;
-    handle->args_calltable[CMD_CONNECT] = cb_connect_args;
-    handle->calltable[CMD_STORE]      = cb_store;
-    handle->args_calltable[CMD_STORE] = cb_store_args;
-    handle->calltable[CMD_MGET]      = cb_mget;
-    handle->args_calltable[CMD_MGET] = cb_mget_args;
-    handle->calltable[CMD_GETL]      = cb_getl;
-    handle->args_calltable[CMD_GETL] = cb_getl_args;
-    handle->calltable[CMD_UNLOCK]      = cb_unlock;
-    handle->args_calltable[CMD_UNLOCK] = cb_unlock_args;
-    handle->calltable[CMD_MTOUCH] = cb_mtouch;
-    handle->args_calltable[CMD_MTOUCH] = cb_mtouch_args;
-    handle->calltable[CMD_ARITHMETIC] = cb_arithmetic;
+    handle->calltable[CMD_CONNECT]         = cb_connect;
+    handle->args_calltable[CMD_CONNECT]    = cb_connect_args;
+    handle->calltable[CMD_STORE]           = cb_store;
+    handle->args_calltable[CMD_STORE]      = cb_store_args;
+    handle->calltable[CMD_MGET]            = cb_mget;
+    handle->args_calltable[CMD_MGET]       = cb_mget_args;
+    handle->calltable[CMD_GETL]            = cb_getl;
+    handle->args_calltable[CMD_GETL]       = cb_getl_args;
+    handle->calltable[CMD_UNLOCK]          = cb_unlock;
+    handle->args_calltable[CMD_UNLOCK]     = cb_unlock_args;
+    handle->calltable[CMD_MTOUCH]          = cb_mtouch;
+    handle->args_calltable[CMD_MTOUCH]     = cb_mtouch_args;
+    handle->calltable[CMD_ARITHMETIC]      = cb_arithmetic;
     handle->args_calltable[CMD_ARITHMETIC] = cb_arithmetic_args;
-    handle->calltable[CMD_REMOVE] = cb_remove;
-    handle->args_calltable[CMD_REMOVE] = cb_remove_args;
-
-    ErlNifTid tid;
-    ErlNifThreadOpts opts;
+    handle->calltable[CMD_REMOVE]          = cb_remove;
+    handle->args_calltable[CMD_REMOVE]     = cb_remove_args;
 
     ErlNifPid* pid = (ErlNifPid*)enif_alloc(sizeof(ErlNifPid));
     enif_self(env, pid);
 
-    if (enif_thread_create("", &tid, worker, handle, &opts) != 0) {
+    if (enif_thread_create("", &handle->thread, worker, handle, &handle->thread_opts) != 0) {
         return enif_make_atom(env, "error");
     }
 
@@ -89,7 +86,10 @@ NIF(cberl_nif_control)
 
     void* args = handle->args_calltable[cmd](env, argc, new_argv);
 
+    enif_free(new_argv);
+
     if(args == NULL) {
+        enif_free(args);
         return enif_make_badarg(env);
     }
 
@@ -104,6 +104,22 @@ NIF(cberl_nif_control)
     return A_OK(env);
 }
 
+NIF(cberl_nif_destroy) {
+    handle_t * handle;
+    void* resp;
+    assert_badarg(enif_get_resource(env, argv[0], cberl_handle, (void **) &handle), env);      
+    queue_put(handle->queue, NULL); // push NULL into our queue so the thread will join
+    enif_thread_join(handle->thread, &resp);
+    queue_destroy(handle->queue);
+    enif_thread_opts_destroy(&handle->thread_opts);
+    enif_mutex_lock(handle->mutex);
+    lcb_destroy(handle->instance);
+    enif_mutex_unlock(handle->mutex);
+    enif_mutex_destroy(handle->mutex);
+    enif_release_resource(handle); 
+    return A_OK(env);
+}
+
 static void* worker(void *obj)
 {
     handle_t* handle = (handle_t*)obj;
@@ -115,6 +131,7 @@ static void* worker(void *obj)
         ERL_NIF_TERM result = handle->calltable[task->cmd](env, handle, task->args);
         enif_send(NULL, task->pid, env, result);
         enif_free(task->pid);
+        enif_free(task->args);
         enif_free(task);
         enif_clear_env(env);
     }
@@ -147,7 +164,8 @@ static int translate_cmd(char *buf)
 
 static ErlNifFunc nif_funcs[] = {
     {"new", 0, cberl_nif_new},
-    {"control", 3, cberl_nif_control}
+    {"control", 3, cberl_nif_control},
+    {"destroy", 1, cberl_nif_destroy}
 };
 
 ERL_NIF_INIT(cberl_nif, nif_funcs, load, NULL, NULL, NULL);
