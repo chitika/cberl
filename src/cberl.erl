@@ -1,8 +1,6 @@
 %%% @author Ali Yakamercan <aliyakamercan@gmail.com>
-%%% @copyright 2012 Chitika Inc.
-%%% @version 0.0.1
-
-
+%%% @copyright 2012-2013 Chitika Inc.
+%%% @version 0.0.2
 
 -module(cberl).
 -include("cberl.hrl").
