@@ -36,7 +36,7 @@ void *cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     free(args->host);
     error0:
     enif_free(args);
-    
+
     return NULL;
 }
 
@@ -273,7 +273,7 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
             enif_alloc_binary(cb.ret[i]->size, &databin);
             memcpy(databin.data, cb.ret[i]->data, cb.ret[i]->size);
             results[i] = enif_make_tuple4(env, 
-                    enif_make_int(env, cb.ret[i]->cas), 
+                    enif_make_uint64(env, cb.ret[i]->cas), 
                     enif_make_int(env, cb.ret[i]->flag), 
                     enif_make_string_len(env, cb.ret[i]->key, cb.ret[i]->nkey - 1, ERL_NIF_LATIN1),
                     enif_make_binary(env, &databin));

@@ -10,8 +10,8 @@ struct libcouchbase_callback {
     void *data;
     void *key;
     size_t nkey;
-    int flag;
-    int cas;
+    lcb_uint32_t flag;
+    lcb_cas_t cas;
 };
 
 struct libcouchbase_callback_m {
