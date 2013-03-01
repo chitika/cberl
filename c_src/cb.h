@@ -63,22 +63,22 @@ typedef struct remove_args_t {
     int cas;
 } remove_args_t;
 
-ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_store_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_arithmetic_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj);
+ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_remove_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj);
 
 ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value);
 ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie);

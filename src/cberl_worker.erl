@@ -45,7 +45,9 @@ start_link(Args) ->
 init([Host, Username, Password, BucketName, Transcoder]) ->
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, connect, [Host, Username, Password, BucketName]),
-    {ok, #instance{handle = Handle, transcoder = Transcoder}}.
+    receive
+        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}}
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -98,7 +100,7 @@ handle_call({mget, Keys, Exp}, _From,
     {reply, Reply, State};
 handle_call({getl, Key, Exp}, _From,
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    cberl_nif:control(Handle, getl, [Key, Exp]),
+    ok = cberl_nif:control(Handle, getl, [Key, Exp]),
     Reply = receive
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->

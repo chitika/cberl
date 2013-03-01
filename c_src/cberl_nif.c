@@ -40,10 +40,9 @@ NIF(cberl_nif_new)
     handle->calltable[CMD_REMOVE]          = cb_remove;
     handle->args_calltable[CMD_REMOVE]     = cb_remove_args;
 
-    ErlNifPid* pid = (ErlNifPid*)enif_alloc(sizeof(ErlNifPid));
-    enif_self(env, pid);
+    handle->thread_opts = enif_thread_opts_create("thread_opts");
 
-    if (enif_thread_create("", &handle->thread, worker, handle, &handle->thread_opts) != 0) {
+    if (enif_thread_create("", &handle->thread, worker, handle, handle->thread_opts) != 0) {
         return enif_make_atom(env, "error");
     }
 
@@ -71,6 +70,8 @@ NIF(cberl_nif_control)
 
     unsigned arg_length;
     if (!enif_get_list_length(env, argv[2], &arg_length)) {
+        enif_free(pid);
+        enif_free(task);
         return enif_make_badarg(env);
     }
 
@@ -89,7 +90,8 @@ NIF(cberl_nif_control)
     enif_free(new_argv);
 
     if(args == NULL) {
-        enif_free(args);
+        enif_free(pid);
+        enif_free(task);
         return enif_make_badarg(env);
     }
 
@@ -111,7 +113,7 @@ NIF(cberl_nif_destroy) {
     queue_put(handle->queue, NULL); // push NULL into our queue so the thread will join
     enif_thread_join(handle->thread, &resp);
     queue_destroy(handle->queue);
-    enif_thread_opts_destroy(&handle->thread_opts);
+    enif_thread_opts_destroy(handle->thread_opts);
     enif_mutex_lock(handle->mutex);
     lcb_destroy(handle->instance);
     enif_mutex_unlock(handle->mutex);

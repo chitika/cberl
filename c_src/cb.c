@@ -5,26 +5,39 @@
 
 void *cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    connect_args_t* connect_args = (connect_args_t*)enif_alloc(sizeof(connect_args_t));
+    connect_args_t* args = (connect_args_t*)enif_alloc(sizeof(connect_args_t));
 
     unsigned arg_length;
-    if (!enif_get_list_length(env, argv[0], &arg_length)) return NULL;     
-    connect_args->host = (char *) malloc(arg_length + 1);
-    if (!enif_get_string(env, argv[0], connect_args->host, arg_length + 1, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_list_length(env, argv[0], &arg_length)) goto error0;
+    args->host = (char *) malloc(arg_length + 1);
+    if (!enif_get_string(env, argv[0], args->host, arg_length + 1, ERL_NIF_LATIN1)) goto error1;
 
-    if (!enif_get_list_length(env, argv[1], &arg_length)) return NULL;
-    connect_args->user = (char *) malloc(arg_length + 1);
-    if (!enif_get_string(env, argv[1], connect_args->user, arg_length + 1, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_list_length(env, argv[1], &arg_length)) goto error1;
+    args->user = (char *) malloc(arg_length + 1);
+    if (!enif_get_string(env, argv[1], args->user, arg_length + 1, ERL_NIF_LATIN1)) goto error2;
 
-    if (!enif_get_list_length(env, argv[2], &arg_length)) return NULL;
-    connect_args->pass = (char *) malloc(arg_length + 1);
-    if (!enif_get_string(env, argv[2], connect_args->pass, arg_length + 1, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_list_length(env, argv[2], &arg_length)) goto error2;
+    args->pass = (char *) malloc(arg_length + 1);
+    if (!enif_get_string(env, argv[2], args->pass, arg_length + 1, ERL_NIF_LATIN1)) goto error3;
      
-    if (!enif_get_list_length(env, argv[3], &arg_length)) return NULL;
-    connect_args->bucket = (char *) malloc(arg_length + 1);
-    if (!enif_get_string(env, argv[3 ], connect_args->bucket, arg_length + 1, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_list_length(env, argv[3], &arg_length)) goto error3;
+    args->bucket = (char *) malloc(arg_length + 1);
+    if (!enif_get_string(env, argv[3], args->bucket, arg_length + 1, ERL_NIF_LATIN1)) goto error4;
 
-    return (void*)connect_args;
+    return (void*)args;
+
+    error4:
+    free(args->bucket);
+    error3:
+    free(args->pass);
+    error2:
+    free(args->user);
+    error1:
+    free(args->host);
+    error0:
+    enif_free(args);
+    
+    return NULL;
 }
 
 ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -90,26 +103,35 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
 
 void* cb_store_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    store_args_t* store_args = (store_args_t*)enif_alloc(sizeof(store_args_t));
+    store_args_t* args = (store_args_t*)enif_alloc(sizeof(store_args_t));
 
     ErlNifBinary value_binary;
 
-    if (!enif_get_int(env, argv[0], &store_args->operation)) return NULL;
-    if (!enif_get_list_length(env, argv[1], &store_args->nkey)) return NULL;
-    store_args->nkey += 1;
-    store_args->key = (char *) malloc(store_args->nkey);
-    if (!enif_get_string(env, argv[1], store_args->key, store_args->nkey, ERL_NIF_LATIN1)) return NULL;
-    if (!enif_inspect_iolist_as_binary(env, argv[2], &value_binary)) return NULL;
+    if (!enif_get_int(env, argv[0], &args->operation)) goto error0;
+    if (!enif_get_list_length(env, argv[1], &args->nkey)) goto error0;
+    args->nkey += 1;
+    args->key = (char *) malloc(args->nkey);
+    if (!enif_get_string(env, argv[1], args->key, args->nkey, ERL_NIF_LATIN1)) goto error1;
+    if (!enif_inspect_iolist_as_binary(env, argv[2], &value_binary)) goto error1;
     
-    store_args->bytes = malloc(value_binary.size);
-    memcpy(store_args->bytes, value_binary.data, value_binary.size);
-    store_args->nbytes = value_binary.size;
+    args->bytes = malloc(value_binary.size);
+    memcpy(args->bytes, value_binary.data, value_binary.size);
+    args->nbytes = value_binary.size;
 
-    if (!enif_get_uint(env, argv[3], &store_args->flags)) return NULL;
-    if (!enif_get_int(env, argv[4], &store_args->exp)) return NULL;
-    if (!enif_get_uint64(env, argv[5], (ErlNifUInt64*)&store_args->cas)) return NULL;
+    if (!enif_get_uint(env, argv[3], &args->flags)) goto error2;
+    if (!enif_get_int(env, argv[4], &args->exp)) goto error2;
+    if (!enif_get_uint64(env, argv[5], (ErlNifUInt64*)&args->cas)) goto error2;
 
-    return store_args;
+    return args;
+
+    error2:
+    free(args->bytes);
+    error1:
+    free(args->key);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -156,40 +178,47 @@ ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj)
 
 void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    unsigned int numkeys;
-    void** keys;
-    size_t* nkeys;
-    int exp;
+    mget_args_t* args = (mget_args_t*)enif_alloc(sizeof(mget_args_t));
+
     ERL_NIF_TERM* currKey;
     ERL_NIF_TERM tail;
 
-    if (!enif_get_list_length(env, argv[0], &numkeys)) return NULL;       
-    keys = malloc(sizeof(char*) * numkeys);
-    nkeys = malloc(sizeof(size_t) * numkeys);
+    if (!enif_get_list_length(env, argv[0], &args->numkeys)) goto error0;     
+    args->keys = malloc(sizeof(char*) * args->numkeys);
+    args->nkeys = malloc(sizeof(size_t) * args->numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
     tail = argv[0];
     unsigned int arglen;
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        if (!enif_get_list_length(env, *currKey, &arglen)) return NULL;
-        nkeys[i] = arglen + 1;
-        keys[i] = malloc(sizeof(char) * nkeys[i]);
-        if (!enif_get_string(env, *currKey, keys[i], nkeys[i], ERL_NIF_LATIN1)) return NULL;    
+        if (!enif_get_list_length(env, *currKey, &arglen)) goto error1;
+        args->nkeys[i] = arglen + 1;
+        args->keys[i] = malloc(sizeof(char) * args->nkeys[i]);
+        if (!enif_get_string(env, *currKey, args->keys[i], args->nkeys[i], ERL_NIF_LATIN1)) goto error2;
         i++;
     }
     
-    // TODO: free shit
-    if (!enif_get_int(env, argv[1], &exp)) return NULL;
-
-    mget_args_t* args = (mget_args_t*)enif_alloc(sizeof(mget_args_t));
-    args->numkeys = numkeys;
-    args->keys = keys;
-    args->nkeys = nkeys;
-    args->exp = exp;
+    if (!enif_get_int(env, argv[1], &args->exp)) goto error2;
 
     free(currKey);
 
     return (void*)args;
+
+    int f = 0;
+
+    error2:
+    free(args->keys[i]);
+    error1:
+    for(f = 0; f < i; i++) {
+        free(args->keys[i]);
+    }
+    free(args->keys);
+    free(args->nkeys);
+    free(currKey);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -273,20 +302,23 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
 
 void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    getl_args_t* getl_args = (getl_args_t*)getl_args;
+    getl_args_t* args = (getl_args_t*)enif_alloc(sizeof(getl_args_t));
 
-    void * key;
-    unsigned int nkey;
-    int exp;
-
-    if (!enif_get_list_length(env, argv[0], &nkey)) return NULL;
-    nkey += 1;
-    key = (char *) malloc(nkey);
-    if (!enif_get_string(env, argv[0], key, nkey, ERL_NIF_LATIN1)) return NULL; 
+    if (!enif_get_list_length(env, argv[0], &args->nkey)) goto error0;
+    args->nkey += 1;
+    args->key = (char *) malloc(args->nkey);
+    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) goto error1; 
     
-    if (!enif_get_int(env, argv[2], &exp)) return NULL;
+    if (!enif_get_int(env, argv[2], &args->exp)) goto error1;
 
-    return (void*)getl_args;
+    return (void*)args;
+
+    error1:
+    free(args->key);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -326,16 +358,23 @@ ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj)
 
 void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    unlock_args_t* unlock_args = (unlock_args_t*)enif_alloc(sizeof(unlock_args_t));
+    unlock_args_t* args = (unlock_args_t*)enif_alloc(sizeof(unlock_args_t));
 
-    if (!enif_get_list_length(env, argv[0], &unlock_args->nkey)) return NULL;
-    unlock_args->nkey += 1;
-    unlock_args->key = (char *) malloc(unlock_args->nkey);
-    if (!enif_get_string(env, argv[0], unlock_args->key, unlock_args->nkey, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_list_length(env, argv[0], &args->nkey)) goto error0;
+    args->nkey += 1;
+    args->key = (char *) malloc(args->nkey);
+    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) goto error1;
     
-    if (!enif_get_int(env, argv[1], &unlock_args->cas)) return NULL;
+    if (!enif_get_int(env, argv[1], &args->cas)) goto error1;
 
-    return (void*)unlock_args;
+    return (void*)args;
+
+    error1:
+    free(args->key);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -378,31 +417,48 @@ void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM tail;
     unsigned int arglen;
 
-    if (!enif_get_list_length(env, argv[0], &args->numkeys)) return NULL;
+    if (!enif_get_list_length(env, argv[0], &args->numkeys)) goto error0;
     args->keys = malloc(sizeof(char*) * args->numkeys);
     args->nkeys = malloc(sizeof(size_t) * args->numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
     tail = argv[0];
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        if (!enif_get_list_length(env, *currKey, &arglen)) return NULL;
+        if (!enif_get_list_length(env, *currKey, &arglen)) goto error1;
         args->nkeys[i] = arglen + 1;
         args->keys[i] = malloc(sizeof(char) * args->nkeys[i]);
-        if (!enif_get_string(env, *currKey, args->keys[i], args->nkeys[i], ERL_NIF_LATIN1)) return NULL;
+        if (!enif_get_string(env, *currKey, args->keys[i], args->nkeys[i], ERL_NIF_LATIN1)) goto error2;
         i++;
     } 
     
     args->exp = malloc(sizeof(int64_t) * args->numkeys);
     tail = argv[1];
-    i = 0;
+    int i2 = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        if (!enif_get_int64(env, *currKey, &args->exp[i])) return NULL; // this is prolly broken :P
-        i++;
+        if (!enif_get_int64(env, *currKey, &args->exp[i2])) goto error3;
+        i2++;
     }
 
     free(currKey);
 
     return (void*)args;
+
+    int f = 0;
+
+    error3:
+    free(args->exp);
+    error2:
+    free(args->keys[i]);
+    error1:
+    for(f = 0; f < i; i++) {
+        free(args->keys[i]);
+    }
+    free(args->keys);
+    free(args->nkeys);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -473,16 +529,23 @@ void* cb_arithmetic_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     arithmetic_args_t* args = (arithmetic_args_t*)enif_alloc(sizeof(arithmetic_args_t));
 
-    if (!enif_get_list_length(env, argv[0], &args->nkey)) return NULL;
+    if (!enif_get_list_length(env, argv[0], &args->nkey)) goto error0;
     args->nkey += 1;
     args->key = (char *) malloc(args->nkey);
-    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) return NULL;
-    if (!enif_get_int64(env, argv[1], (ErlNifSInt64*)&args->delta)) return NULL;
-    if (!enif_get_uint64(env, argv[2], (ErlNifUInt64 *)&args->exp)) return NULL;
-    if (!enif_get_int(env, argv[3], &args->create)) return NULL;
-    if (!enif_get_uint64(env, argv[4], (ErlNifUInt64 *)&args->initial)) return NULL;
+    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) goto error1;
+    if (!enif_get_int64(env, argv[1], (ErlNifSInt64*)&args->delta)) goto error1;
+    if (!enif_get_uint64(env, argv[2], (ErlNifUInt64 *)&args->exp)) goto error1;
+    if (!enif_get_int(env, argv[3], &args->create)) goto error1;
+    if (!enif_get_uint64(env, argv[4], (ErlNifUInt64 *)&args->initial)) goto error1;
 
     return (void*)args;
+
+    error1:
+    free(args->key);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
@@ -523,14 +586,21 @@ void* cb_remove_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     remove_args_t* args = (remove_args_t*)enif_alloc(sizeof(remove_args_t));
 
-    if (!enif_get_list_length(env, argv[0], &args->nkey)) return NULL;
+    if (!enif_get_list_length(env, argv[0], &args->nkey)) goto error0;
     args->nkey += 1;
     args->key = (char *) malloc(args->nkey);
-    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) return NULL;
+    if (!enif_get_string(env, argv[0], args->key, args->nkey, ERL_NIF_LATIN1)) goto error1;
     
-    if (!enif_get_int(env, argv[1], &args->cas)) return NULL;
+    if (!enif_get_int(env, argv[1], &args->cas)) goto error1;
 
     return (void*)args;
+
+    error1:
+    free(args->key);
+    error0:
+    enif_free(args);
+
+    return NULL;
 }
 
 ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)

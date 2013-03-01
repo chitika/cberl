@@ -14,7 +14,7 @@
 
 typedef struct handle {
     ErlNifTid thread;
-    ErlNifThreadOpts thread_opts;
+    ErlNifThreadOpts* thread_opts;
     queue_t *queue;
     ERL_NIF_TERM (*calltable[8])(ErlNifEnv* env, struct handle* handle, void* obj);
     void* (*args_calltable[8])(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
