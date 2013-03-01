@@ -3,7 +3,7 @@ CBERL
 
 NIF based Erlang bindings for couchbase based on libcouchbase. 
 CBERL is at early stage of development, it only supports very basic functionality. Please submit bugs and patches if you find any.
-Only tested on mac and amazon linux so far.
+Tested on mac, debian squeeze and amazon linux.
 
 Quick Setup/Start
 ---------
@@ -24,7 +24,7 @@ For installing libcouchbase on other systems visit http://www.couchbase.com/deve
 
 Then:
 
-    git clone git@github.com:aliyakamercan/cberl.git
+    git clone git@github.com:chitika/cberl.git
     cd cberl
     ### assuming you have rebar in your path
     rebar get-deps compile
@@ -39,7 +39,7 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
 
     %% create a connection pool  of 5 connections named cberl_default
     %% you can provide more argument like host, username, password, 
-    %% bucket and transcoder - look at [cberl.erl](https://github.com/aliyakamercan/cberl/blob/master/src/cberl.erl) for more detail 
+    %% bucket and transcoder - look at [cberl.erl](https://github.com/chitika/cberl/blob/master/src/cberl.erl) for more detail 
     cberl:start_link(cberl_default, 5).
     {ok, <0.33.0>}
     %% Poolname, Key, Expire - 0 for infinity, Value
