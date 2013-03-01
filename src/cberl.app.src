@@ -1,11 +1,12 @@
 {application, cberl,
  [
-  {description, "Eralng Couchbase Driver"},
-  {vsn, "0.0.1"},
+  {description, ""},
+  {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
+  {mod, { cberl_app, []}},
   {env, []}
  ]}.

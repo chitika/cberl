@@ -1,6 +1,7 @@
 -module(cberl_transcoder).
 
--include("cberl.hrl").
+%-include("cberl.hrl").
+-type value() :: string() | list() | integer() | binary().
 -export([encode_value/2, decode_value/2, flag/1]).
 
 -define('CBE_JSON',     16#0001).
