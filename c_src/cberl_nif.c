@@ -80,7 +80,7 @@ NIF(cberl_nif_control)
     ERL_NIF_TERM* new_argv = (ERL_NIF_TERM*)enif_alloc(sizeof(ERL_NIF_TERM) * arg_length);
     int i = 0;
     while (enif_get_list_cell(env, nargs, &head, &tail)) {
-        new_argv[i] = enif_make_copy(env, head);
+        new_argv[i] = head;
         i++;
         nargs = tail;
     }
