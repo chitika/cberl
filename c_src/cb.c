@@ -209,8 +209,8 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     error2:
     free(args->keys[i]);
     error1:
-    for(f = 0; f < i; i++) {
-        free(args->keys[i]);
+    for(f = 0; f < i; f++) {
+        free(args->keys[f]);
     }
     free(args->keys);
     free(args->nkeys);
@@ -450,8 +450,8 @@ void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     error2:
     free(args->keys[i]);
     error1:
-    for(f = 0; f < i; i++) {
-        free(args->keys[i]);
+    for(f = 0; f < i; f++) {
+        free(args->keys[f]);
     }
     free(args->keys);
     free(args->nkeys);
