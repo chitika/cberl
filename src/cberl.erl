@@ -48,7 +48,7 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName) ->
 
 start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) ->
     SizeArgs = [{size, NumCon},
-                {max_overflow, 10}],
+                {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
     poolboy:start(PoolArgs, [Host, Username, Password, BucketName, Transcoder]).
