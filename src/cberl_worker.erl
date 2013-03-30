@@ -13,6 +13,8 @@
          terminate/2,
          code_change/3]).
 
+-define(TIMEOUT, 5000).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -47,6 +49,7 @@ init([Host, Username, Password, BucketName, Transcoder]) ->
     ok = cberl_nif:control(Handle, connect, [Host, Username, Password, BucketName]),
     receive
         ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}}
+    after ?TIMEOUT -> {error, timeout}
     end.
 
 
@@ -69,6 +72,7 @@ handle_call({mtouch, Keys, ExpTimesE}, _From,
     ok = cberl_nif:control(Handle, mtouch, [Keys, ExpTimesE]),
     receive
         Reply -> {reply, Reply, State}
+    after ?TIMEOUT -> {reply, {error, timeout}, State}
     end;
 handle_call({unlock, Key, Cas}, _From, 
             State = #instance{handle = Handle}) ->
@@ -80,6 +84,7 @@ handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From,
                     Transcoder:flag(TranscoderOpts), Exp, Cas]),
     receive
         Reply -> {reply, Reply, State}
+    after ?TIMEOUT -> {reply, {error, timeout}, State}
     end;
 handle_call({mget, Keys, Exp}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
@@ -96,6 +101,7 @@ handle_call({mget, Keys, Exp}, _From,
                                 Result
                         end
                 end, Results)
+    after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
 handle_call({getl, Key, Exp}, _From,
@@ -106,6 +112,7 @@ handle_call({getl, Key, Exp}, _From,
         {ok, {Cas, Flag, Value}} ->
             DecodedValue = Transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
+    after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
 handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
@@ -116,6 +123,7 @@ handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
         {ok, {Cas, Flag, Value}} ->
             DecodedValue = Transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
+    after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
 handle_call({remove, Key, N}, _From,
@@ -123,6 +131,7 @@ handle_call({remove, Key, N}, _From,
     ok = cberl_nif:control(Handle, remove, [Key, N]),
     receive
         Reply -> {reply, Reply, State}
+    after ?TIMEOUT -> {error, timeout}
     end;
 handle_call(_Request, _From, State) ->
     Reply = ok,
