@@ -73,8 +73,7 @@ Check out [cberl_transcoder.erl](https://github.com/aliyakamercan/cberl/blob/mas
 Performance
 -------
 
-I included [results](https://github.com/aliyakamercan/cberl/blob/pool/bench/macbook_cberl.png) of [basho_bench](http://docs.basho.com/riak/latest/cookbooks/Benchmarking/) which I ran on my mac. It is the results of 100 processes using a pool of 5 connections. Anyways this is pretty meaningless 
- since requirements and system specifications change all the time. I included basha_bench driver and config file under bench. Please tweak the config file for your requirement and run your own benchmarks.
+I included [results](https://github.com/wcummings/cberl/blob/master/bench/macmini_cberl_new.png) of [basho_bench](http://docs.basho.com/riak/latest/cookbooks/Benchmarking/) which I ran on my mac. It is the results of 100 processes using a pool of 5 connections. I included basha_bench driver and config file under bench. Please tweak the config file for your requirement and run your own benchmarks.
 
 TODO
 ----
