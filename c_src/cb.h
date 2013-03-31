@@ -44,7 +44,7 @@ typedef struct unlock_args {
 typedef struct mtouch_args {
     void** keys;
     size_t* nkeys;
-    int64_t *exp;
+    long *exp;
     unsigned int numkeys;
 } mtouch_args_t;
 
