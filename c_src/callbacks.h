@@ -18,7 +18,7 @@ struct libcouchbase_callback_m {
     int currKey;
     struct libcouchbase_callback** ret;
 };
-//libcouchbase callbacks
+
 static void error_callback(lcb_t instance,
                            lcb_error_t error,
                            const char *errinfo)
@@ -31,15 +31,8 @@ static void error_callback(lcb_t instance,
 static void get_callback(lcb_t instance,
                          const void *cookie,
                          lcb_error_t error,
-             const lcb_get_resp_t *item
-                         /*const void *key,
-                         lcb_size_t nkey,
-                         const void *bytes,
-                         lcb_size_t nbytes,
-                         lcb_uint32_t flags,
-                         lcb_cas_t cas*/)
+                         const lcb_get_resp_t *item)
 {
-    //(void)key; (void)nkey; (void)flags; (void)cas;
     struct libcouchbase_callback_m *cbm;
     cbm = (struct libcouchbase_callback_m *)cookie;
     cbm->ret[cbm->currKey] = malloc(sizeof(struct libcouchbase_callback));
@@ -60,13 +53,8 @@ static void get_callback(lcb_t instance,
 static void arithmetic_callback(lcb_t instance,
                                 const void *cookie,
                                 lcb_error_t error,
-                const lcb_arithmetic_resp_t *resp
-                                /*const void *key,
-                                lcb_size_t nkey,
-                                lcb_uint64_t value,
-                                lcb_cas_t cas*/)
+                const lcb_arithmetic_resp_t *resp)
 {
-  //(void)key; (void)nkey; (void)cas;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
@@ -80,12 +68,11 @@ static void arithmetic_callback(lcb_t instance,
     }
 }
 static void unlock_callback(lcb_t instance,
-                             const void *cookie,
-                             lcb_error_t error,
-                /*const void *key, size_t nkey*/
-                const lcb_unlock_resp_t *resp)
+                            const void *cookie,
+                            lcb_error_t error,
+                            const lcb_unlock_resp_t *resp)
 {
-  (void)instance; //(void)key; (void)nkey; 
+    (void)instance;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
@@ -94,11 +81,9 @@ static void unlock_callback(lcb_t instance,
 static void touch_callback(lcb_t instance,
                            const void *cookie,
                            lcb_error_t error,
-               const lcb_touch_resp_t *resp
-                           /*const void *key,
-                           lcb_size_t nkey*/)
+                           const lcb_touch_resp_t *resp)
 {
-  (void)instance; //(void)key; (void)nkey; 
+    (void)instance;
     struct libcouchbase_callback_m *cbm;
     cbm = (struct libcouchbase_callback_m *)cookie;
     cbm->ret[cbm->currKey] = malloc(sizeof(struct libcouchbase_callback));
@@ -113,9 +98,7 @@ static void store_callback(lcb_t instance,
                const void *cookie,
                lcb_storage_t operation,
                lcb_error_t error,
-               const lcb_store_resp_t *item
-               /*const void *key, size_t nkey,
-                             uint64_t cas*/)
+               const lcb_store_resp_t *item)
 {
   
     (void)instance; (void)operation;
@@ -128,13 +111,12 @@ static void store_callback(lcb_t instance,
 static void remove_callback(lcb_t instance,
                             const void *cookie,
                             lcb_error_t error,
-                const lcb_remove_resp_t *resp
-                            /*const void *key,
-                  lcb_size_t nkey*/)
+                            const lcb_remove_resp_t *resp)
 {
-  (void)instance; //(void)key; (void)nkey; 
+    (void)instance;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
 }
+
 #endif
