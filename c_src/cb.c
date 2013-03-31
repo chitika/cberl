@@ -1,5 +1,7 @@
 #include <libcouchbase/couchbase.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "callbacks.h"
 #include "cb.h"
 
