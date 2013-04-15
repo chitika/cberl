@@ -45,10 +45,12 @@ start_link(Args) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Host, Username, Password, BucketName, Transcoder]) ->
+    process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, connect, [Host, Username, Password, BucketName]),
     receive
-        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}}
+        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}};
+        {error, Error} -> {stop, Error}
     after ?TIMEOUT -> {error, timeout}
     end.
 
