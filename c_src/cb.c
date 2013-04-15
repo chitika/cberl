@@ -65,7 +65,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
       printf("failed create io ops\n");
       fprintf(stderr, "Failed to create IO instance: %s\n",
           lcb_strerror(NULL, err));
-      return 1;
+      return return_lcb_error(env, err);
     }
 
     create_options.v.v0.host = host;
