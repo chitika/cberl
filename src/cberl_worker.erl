@@ -1,4 +1,5 @@
 -module(cberl_worker).
+-behaviour(poolboy_worker).
 -include("cberl.hrl").
 -behaviour(gen_server).
 
