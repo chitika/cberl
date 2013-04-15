@@ -19,6 +19,7 @@ typedef struct task {
 #define CMD_MTOUCH      5
 #define CMD_ARITHMETIC  6
 #define CMD_REMOVE      7
+#define CMD_HTTP        8
 
 static void* worker(void *obj);
 static int translate_cmd(char *buf);

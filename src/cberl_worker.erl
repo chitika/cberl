@@ -136,6 +136,13 @@ handle_call({remove, Key, N}, _From,
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {error, timeout}
     end;
+handle_call({http, Path, Body, ContentType, Method, Chunked}, _From,
+            State = #instance{handle = Handle}) ->
+    ok = cberl_nif:control(Handle, http, [Path, Body, ContentType, Method, Chunked]),
+    receive
+        Reply -> {reply, Reply, State}
+    after ?TIMEOUT -> {error, timeout}
+    end;
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
