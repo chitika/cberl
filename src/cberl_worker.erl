@@ -13,7 +13,7 @@
          terminate/2,
          code_change/3]).
 
--define(TIMEOUT, 5000).
+-define(TIMEOUT, infinity).
 
 %%%===================================================================
 %%% API
