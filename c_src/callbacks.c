@@ -9,8 +9,10 @@ void error_callback(lcb_t instance,
                     const char *errinfo)
 {
     (void)instance;
-    fprintf(stderr, "Fatal error\r\n");
-    exit(EXIT_FAILURE);
+    if(error != LCB_ETIMEDOUT) {
+        fprintf(stderr, "Fatal error\r\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void get_callback(lcb_t instance,
