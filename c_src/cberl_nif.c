@@ -39,6 +39,8 @@ NIF(cberl_nif_new)
     handle->args_calltable[CMD_ARITHMETIC] = cb_arithmetic_args;
     handle->calltable[CMD_REMOVE]          = cb_remove;
     handle->args_calltable[CMD_REMOVE]     = cb_remove_args;
+    handle->calltable[CMD_HTTP]            = cb_http;
+    handle->args_calltable[CMD_HTTP]       = cb_http_args;
 
     handle->thread_opts = enif_thread_opts_create("thread_opts");
 
@@ -143,6 +145,7 @@ static void* worker(void *obj)
 
 static int translate_cmd(char *buf)
 {
+    // FIXME: enumerate in erlang instead
     if (strcmp(buf, "connect") == 0) {
         return CMD_CONNECT;
     } else if (strcmp(buf, "store") == 0) {
@@ -159,6 +162,8 @@ static int translate_cmd(char *buf)
         return CMD_ARITHMETIC;
     } else if (strcmp(buf, "remove") == 0) {
         return CMD_REMOVE;
+    } else if (strcmp(buf, "http") == 0) {
+        return CMD_HTTP;
     } else {
         return -1;
     }

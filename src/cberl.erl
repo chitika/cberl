@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3]).
+         mget/3, getl/3, http/6]).
 %remove
 -export([remove/2]).
 
@@ -222,6 +222,9 @@ arithmetic(PoolName, Key, OffSet, Exp, Create, Initial) ->
 remove(PoolName, Key) ->
     execute(PoolName, {remove, Key, 0}).
 
+http(PoolName, Path, Body, ContentType, Method, Type) ->
+    execute(PoolName, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
+
 stop(PoolName) ->
     poolboy:stop(PoolName).
 
@@ -229,3 +232,12 @@ execute(PoolName, Cmd) ->
     poolboy:transaction(PoolName, fun(Worker) ->
             gen_server:call(Worker, Cmd)
        end).
+
+http_type(view) -> 0;
+http_type(management) -> 1;
+http_type(raw) ->2.
+
+http_method(get) -> 0;
+http_method(post) -> 1;
+http_method(put) -> 2;
+http_method(delete) -> 3.

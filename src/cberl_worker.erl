@@ -1,4 +1,5 @@
 -module(cberl_worker).
+-behaviour(poolboy_worker).
 -include("cberl.hrl").
 -behaviour(gen_server).
 
@@ -13,7 +14,7 @@
          terminate/2,
          code_change/3]).
 
--define(TIMEOUT, 5000).
+-define(TIMEOUT, infinity).
 
 %%%===================================================================
 %%% API
@@ -45,10 +46,12 @@ start_link(Args) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Host, Username, Password, BucketName, Transcoder]) ->
+    process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, connect, [Host, Username, Password, BucketName]),
     receive
-        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}}
+        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}};
+        {error, Error} -> {stop, Error}
     after ?TIMEOUT -> {error, timeout}
     end.
 
@@ -129,6 +132,13 @@ handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
 handle_call({remove, Key, N}, _From,
             State = #instance{handle = Handle}) ->
     ok = cberl_nif:control(Handle, remove, [Key, N]),
+    receive
+        Reply -> {reply, Reply, State}
+    after ?TIMEOUT -> {error, timeout}
+    end;
+handle_call({http, Path, Body, ContentType, Method, Chunked}, _From,
+            State = #instance{handle = Handle}) ->
+    ok = cberl_nif:control(Handle, http, [Path, Body, ContentType, Method, Chunked]),
     receive
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {error, timeout}

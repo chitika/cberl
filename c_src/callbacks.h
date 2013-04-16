@@ -51,4 +51,10 @@ void remove_callback(lcb_t instance,
                      lcb_error_t error,
                      const lcb_remove_resp_t *resp);
 
+void http_callback(lcb_http_request_t request,
+                   lcb_t instance,
+                   const void* cookie,
+                   lcb_error_t error,
+                   const lcb_http_resp_t *resp);
+
 #endif

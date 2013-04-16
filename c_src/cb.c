@@ -65,7 +65,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
       printf("failed create io ops\n");
       fprintf(stderr, "Failed to create IO instance: %s\n",
           lcb_strerror(NULL, err));
-      return 1;
+      return return_lcb_error(env, err);
     }
 
     create_options.v.v0.host = host;
@@ -92,6 +92,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     (void)lcb_set_touch_callback(handle->instance, touch_callback);
     (void)lcb_set_arithmetic_callback(handle->instance, arithmetic_callback);
     (void)lcb_set_remove_callback(handle->instance, remove_callback);
+    (void)lcb_set_http_complete_callback(handle->instance, http_callback);
 
     if (lcb_connect(handle->instance) != LCB_SUCCESS) {
         return enif_make_tuple2(env, enif_make_atom(env, "error"),
@@ -637,6 +638,91 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
     } 
 
     return A_OK(env);
+}
+
+/*
+typedef struct http_args {
+    char *path;
+    char *body;
+    lcb_http_method_t method;
+    char *content_type;
+    lcb_http_type_t type;
+} http_args_t;
+*/
+
+void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    http_args_t* args = (http_args_t*)enif_alloc(sizeof(http_args_t));
+
+    unsigned int len;
+
+    if (!enif_get_list_length(env, argv[0], &len)) goto error0;
+    len += 1;
+    args->path = (char *)enif_alloc(len * sizeof(char));
+    if (!enif_get_string(env, argv[0], args->path, len, ERL_NIF_LATIN1)) goto error1;
+
+    if (!enif_get_list_length(env, argv[1], &len)) goto error1;
+    len += 1;
+    args->body = (char *)enif_alloc(len * sizeof(char));
+    if (!enif_get_string(env, argv[1], args->body, len, ERL_NIF_LATIN1)) goto error2;
+
+    if (!enif_get_list_length(env, argv[2], &len)) goto error2;
+    len += 1;
+    args->content_type = (char *)enif_alloc(len * sizeof(char));
+    if (!enif_get_string(env, argv[2], args->content_type, len, ERL_NIF_LATIN1)) goto error3;
+
+    if (!enif_get_int(env, argv[3], &args->method)) goto error3;
+    if (!enif_get_int(env, argv[4], &args->type)) goto error3;
+
+    return (void*)args;
+
+    error3:
+    enif_free(args->content_type);
+    error2:
+    enif_free(args->path);
+    error1:
+    enif_free(args->body);
+    error0:
+    return NULL;
+}
+
+ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
+{
+    http_args_t* args = (http_args_t*)obj;
+
+    struct libcouchbase_callback cb;
+    lcb_error_t ret;
+    lcb_http_request_t req;
+
+    enif_mutex_lock(handle->mutex);
+
+    lcb_http_cmd_t cmd;
+    cmd.version = 0;
+    cmd.v.v0.path = args->path;
+    cmd.v.v0.npath = strlen(args->path);
+    cmd.v.v0.body = args->body;
+    cmd.v.v0.nbody = strlen(args->body);
+    cmd.v.v0.method = args->method;
+    cmd.v.v0.chunked = 0; // no support for chunking
+    cmd.v.v0.content_type = args->content_type;
+
+    ret = lcb_make_http_request(handle->instance, &cb, args->type, &cmd, &req);
+
+    if (ret != LCB_SUCCESS) {
+        enif_mutex_unlock(handle->mutex);
+        return return_lcb_error(env, ret);
+    }
+    lcb_wait(handle->instance);
+    enif_mutex_unlock(handle->mutex);
+
+    if(cb.error != LCB_SUCCESS) {
+        return return_lcb_error(env, cb.error);
+    }
+
+    ErlNifBinary value_binary;
+    enif_alloc_binary(cb.size, &value_binary);
+    memcpy(value_binary.data, cb.data, cb.size);
+    return enif_make_tuple2(env, A_OK(env), enif_make_binary(env, &value_binary));
 }
 
 ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value) {
