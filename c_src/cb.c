@@ -640,16 +640,6 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
     return A_OK(env);
 }
 
-/*
-typedef struct http_args {
-    char *path;
-    char *body;
-    lcb_http_method_t method;
-    char *content_type;
-    lcb_http_type_t type;
-} http_args_t;
-*/
-
 void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     http_args_t* args = (http_args_t*)enif_alloc(sizeof(http_args_t));
