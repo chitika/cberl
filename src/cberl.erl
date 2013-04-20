@@ -222,6 +222,14 @@ arithmetic(PoolName, Key, OffSet, Exp, Create, Initial) ->
 remove(PoolName, Key) ->
     execute(PoolName, {remove, Key, 0}).
 
+%% @doc execute a command with the REST API
+%% PoolName name of connection pool
+%% Path HTTP path
+%% Body HTTP body (for POST requests)
+%% ContentType HTTP content type
+%% Method HTTP method
+%% Type Couchbase request type
+-spec http(instance(), string(), string(), string(), string(), http_type()) -> ok | {error, _}.
 http(PoolName, Path, Body, ContentType, Method, Type) ->
     execute(PoolName, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
