@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3, http/6]).
+         mget/3, getl/3, http/6, query_view/4]).
 %remove
 -export([remove/2]).
 
@@ -233,6 +233,21 @@ remove(PoolName, Key) ->
 http(PoolName, Path, Body, ContentType, Method, Type) ->
     execute(PoolName, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
+%% @doc Query a view
+%% PoolName name of connection pool
+%% DocName design doc name
+%% ViewName view name
+%% Args arguments and filters (limit etc.)
+query_view(PoolName, DocName, ViewName, Args) ->
+    Path = string:join(["_design", DocName, "_view", ViewName], "/"),
+    Resp = case proplists:get_value(keys, Args) of
+        undefined -> 
+            http(PoolName, string:join([Path, query_args(Args)], "?"), "{}", "application/json", get, view);
+        Keys ->
+            http(PoolName, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(jiffy:encode({[{keys, Keys}]})), "application/json", post, view)
+    end,
+    decode_query_resp(Resp).
+
 stop(PoolName) ->
     poolboy:stop(PoolName).
 
@@ -249,3 +264,60 @@ http_method(get) -> 0;
 http_method(post) -> 1;
 http_method(put) -> 2;
 http_method(delete) -> 3.
+
+query_args(Args) when is_list(Args) ->
+    string:join([query_arg(A) || A <- Args], "&").
+
+decode_query_resp({ok, Resp}) ->
+    case jiffy:decode(Resp) of
+        {[{<<"total_rows">>, TotalRows},
+            {<<"rows">>,
+             [{Rows}]}]} ->
+            {ok, {TotalRows, Rows}};
+        %% FIXME: Decode error strings
+        {[{<<"error">>,Error},
+          {<<"reason">>,
+           Reason}]} ->
+            {error, {Error, Reason}}
+    end.
+
+query_arg({descending, true}) -> "descending=true";
+query_arg({descending, false}) -> "descending=false";
+
+query_arg({endkey, V}) when is_list(V) -> string:join(["endkey", V], "=");
+
+query_arg({endkey_docid, V}) when is_list(V) -> string:join(["endkey_docid", V], "=");
+
+query_arg({full_set, true})-> "full_set=true";
+query_arg({full_set, false}) -> "full_set=false";
+
+query_arg({group, true}) -> "group=true";
+query_arg({group, false}) -> "group=false";
+
+query_arg({group_level, V}) when is_integer(V) -> string:join(["group_level", integer_to_list(V)], "=");
+
+query_arg({inclusive_end, true}) -> "inclusive_end=true";
+query_arg({inclusive_end, false}) -> "inclusive_end=false";
+
+query_arg({key, V}) when is_list(V) -> string:join(["key", V], "=");
+
+query_arg({keys, V}) when is_list(V) -> string:join(["keys", jiffy:encode(V)], "=");
+
+query_arg({limit, V}) when is_integer(V) -> string:join(["limit", integer_to_list(V)], "=");
+
+query_arg({on_error, continue}) -> "on_error=continue";
+query_arg({on_error, stop}) -> "on_error=stop";
+
+query_arg({reduce, true}) -> "reduce=true";
+query_arg({reduce, false}) -> "reduce=false";
+
+query_arg({skip, V}) when is_integer(V) -> string:join(["skip", integer_to_list(V)], "=");
+
+query_arg({stale, false}) -> "stale=false";
+query_arg({stale, ok}) -> "stale=ok";
+query_arg({stale, update_after}) -> "stale=update_after";
+
+query_arg({start_key, V}) when is_list(V) -> string:join(["start_key", V], "=");
+
+query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], "=").
+
