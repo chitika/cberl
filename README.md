@@ -80,6 +80,4 @@ TODO
 
 1) Update documentation
 
-2) Add missing methods (querying documents and informational methods)
-
-3) Write more tests
+2) Write more tests
