@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3, http/6, query_view/4]).
+         mget/3, getl/3, http/6, query_view/4, fold/3, foreach/2]).
 %remove
 -export([remove/2]).
 
@@ -248,6 +248,20 @@ query_view(PoolName, DocName, ViewName, Args) ->
     end,
     decode_query_resp(Resp).
 
+fold(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
+    case query_view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foldl(Func, Acc, Rows);
+        {error, _} = E -> E
+    end.
+
+foreach(Func, {PoolName, DocName, ViewName, Args}) ->
+    case query_view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foreach(Func, Rows);
+        {error, _} = E -> E
+    end.
+
 stop(PoolName) ->
     poolboy:stop(PoolName).
 
@@ -258,7 +272,7 @@ execute(PoolName, Cmd) ->
 
 http_type(view) -> 0;
 http_type(management) -> 1;
-http_type(raw) ->2.
+http_type(raw) -> 2.
 
 http_method(get) -> 0;
 http_method(post) -> 1;
@@ -272,8 +286,8 @@ decode_query_resp({ok, Resp}) ->
     case jiffy:decode(Resp) of
         {[{<<"total_rows">>, TotalRows},
             {<<"rows">>,
-             [{Rows}]}]} ->
-            {ok, {TotalRows, Rows}};
+             Rows}]} ->
+            {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
         %% FIXME: Decode error strings
         {[{<<"error">>,Error},
           {<<"reason">>,
@@ -288,7 +302,7 @@ query_arg({endkey, V}) when is_list(V) -> string:join(["endkey", V], "=");
 
 query_arg({endkey_docid, V}) when is_list(V) -> string:join(["endkey_docid", V], "=");
 
-query_arg({full_set, true})-> "full_set=true";
+query_arg({full_set, true}) -> "full_set=true";
 query_arg({full_set, false}) -> "full_set=false";
 
 query_arg({group, true}) -> "group=true";
@@ -320,4 +334,3 @@ query_arg({stale, update_after}) -> "stale=update_after";
 query_arg({start_key, V}) when is_list(V) -> string:join(["start_key", V], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], "=").
-
