@@ -7,7 +7,8 @@ cberl_test_() ->
       [fun test_set_and_get/1,
        fun test_replace_add/1,
        fun test_get_and_touch/1,
-       fun test_append_prepend/1]}].
+       fun test_append_prepend/1,
+       fun test_remove/1]}].
 
 %%%===================================================================
 %%% Setup / Teardown
@@ -73,4 +74,11 @@ test_get_and_touch(_) ->
     ok = cberl:set(?POOLNAME, Key, 0, Value),
     cberl:get_and_touch(?POOLNAME, Key, 1),
     timer:sleep(5000),
+    [?_assertEqual({Key, {error,key_enoent}}, cberl:get(?POOLNAME, Key))].
+
+test_remove(_) ->
+    Key = <<"testkey">>,
+    Value = "testval",
+    ok = cberl:set(?POOLNAME, Key, 0, Value),
+    ok = cberl:remove(?POOLNAME, Key),
     [?_assertEqual({Key, {error,key_enoent}}, cberl:get(?POOLNAME, Key))].
