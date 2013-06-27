@@ -46,11 +46,6 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     connect_args_t* args = (connect_args_t*)obj;
 
-    char * host = args->host;
-    char * user = args->user;
-    char * pass = args->pass;
-    char * bucket = args->bucket;
-
     lcb_error_t err;
     struct lcb_create_st create_options;
     struct lcb_create_io_ops_st io_opts;
@@ -68,17 +63,17 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
       return return_lcb_error(env, err);
     }
 
-    create_options.v.v0.host = host;
-    create_options.v.v0.user = user;
-    create_options.v.v0.bucket = bucket;
-    create_options.v.v0.passwd = pass;
+    create_options.v.v0.host = args->host;
+    create_options.v.v0.user = args->user;
+    create_options.v.v0.bucket = args->bucket;
+    create_options.v.v0.passwd = args->pass;
 
     err = lcb_create(&(handle->instance), &create_options);
 
-    free(host);
-    free(user);
-    free(pass);
-    free(bucket);
+    free(args->host);
+    free(args->user);
+    free(args->pass);
+    free(args->bucket);
 
     if (err != LCB_SUCCESS) {
         return enif_make_tuple2(env, enif_make_atom(env, "error"),
@@ -98,8 +93,8 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
         return enif_make_tuple2(env, enif_make_atom(env, "error"),
                 enif_make_string(env, "Failed to connect libcouchbase instance to server\n", ERL_NIF_LATIN1));
     }
+
     lcb_wait(handle->instance);
-    handle->mutex = enif_mutex_create("cberl_instance_mutex");
 
     return enif_make_atom(env, "ok");
 }
@@ -159,20 +154,17 @@ ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj)
     cmd.v.v0.exptime = args->exp;
     cmd.v.v0.cas = args->cas;
 
-    enif_mutex_lock(handle->mutex);
     ret = lcb_store(handle->instance, &cb, 1, commands);
     
     free(args->key);
     free(args->bytes);
     
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex);
         return return_lcb_error(env, ret);
     }
 
     lcb_wait(handle->instance);
 
-    enif_mutex_unlock(handle->mutex);
     if (cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     }
@@ -245,7 +237,6 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     cb.currKey = 0;
     cb.ret = malloc(sizeof(struct libcouchbase_callback*) * numkeys);
 
-    enif_mutex_lock(handle->mutex);
 
     const lcb_get_cmd_t* commands[numkeys];
     i = 0;
@@ -261,12 +252,9 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     ret = lcb_get(handle->instance, &cb, numkeys, commands);
 
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
-    
 
     results = malloc(sizeof(ERL_NIF_TERM) * numkeys);
     i = 0; 
@@ -332,8 +320,6 @@ ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj)
 
     lcb_error_t ret; 
       
-    enif_mutex_lock(handle->mutex);
-
     lcb_get_cmd_t cmd;
     const lcb_get_cmd_t *commands[1];
     commands[0] = &cmd;
@@ -347,11 +333,9 @@ ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj)
     free(args->key);
 
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
@@ -388,8 +372,6 @@ ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj)
 
     lcb_error_t ret; //for checking responses
          
-    enif_mutex_lock(handle->mutex);
-
     lcb_unlock_cmd_t unlock;
     memset(&unlock, 0, sizeof(unlock));
     unlock.v.v0.key = args->key;
@@ -401,11 +383,9 @@ ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj)
     free(args->key);
 
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
@@ -479,8 +459,6 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
     cb.currKey = 0;
     cb.ret = malloc(sizeof(struct libcouchbase_callback*) * args->numkeys);
 
-    enif_mutex_lock(handle->mutex);
-
     const lcb_touch_cmd_t* commands[args->numkeys];
     i = 0;
     for (; i < args->numkeys; i++) {
@@ -495,11 +473,9 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
     ret = lcb_touch(handle->instance, &cb, args->numkeys, commands);
     
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
     
     results = malloc(sizeof(ERL_NIF_TERM) * args->numkeys);
     i = 0; 
@@ -559,8 +535,6 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
 
     lcb_error_t ret; //for checking responses
     
-    enif_mutex_lock(handle->mutex);
-
     lcb_arithmetic_cmd_t arithmetic;
     const lcb_arithmetic_cmd_t* commands[1];
     commands[0] = &arithmetic;
@@ -574,11 +548,9 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
  
     free(args->key);
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
@@ -613,9 +585,7 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
     struct libcouchbase_callback cb; 
 
     lcb_error_t ret; //for checking responses
-        
-    enif_mutex_lock(handle->mutex); 
-    
+
     lcb_remove_cmd_t remove;
     const lcb_remove_cmd_t* commands[1];
     commands[0] = &remove;
@@ -628,11 +598,11 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
 
     free(args->key);
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex); 
         return return_lcb_error(env, ret);
     }
+
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex); 
+
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     } 
@@ -684,8 +654,6 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
     lcb_error_t ret;
     lcb_http_request_t req;
 
-    enif_mutex_lock(handle->mutex);
-
     lcb_http_cmd_t cmd;
     cmd.version = 0;
     cmd.v.v0.path = args->path;
@@ -699,11 +667,10 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
     ret = lcb_make_http_request(handle->instance, &cb, args->type, &cmd, &req);
 
     if (ret != LCB_SUCCESS) {
-        enif_mutex_unlock(handle->mutex);
         return return_lcb_error(env, ret);
     }
+
     lcb_wait(handle->instance);
-    enif_mutex_unlock(handle->mutex);
 
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);

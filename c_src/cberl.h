@@ -19,7 +19,6 @@ typedef struct handle {
     ERL_NIF_TERM (*calltable[9])(ErlNifEnv* env, struct handle* handle, void* obj);
     void* (*args_calltable[9])(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
     lcb_t instance;
-    ErlNifMutex* mutex;
 } handle_t;
 
 #endif

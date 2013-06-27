@@ -116,10 +116,7 @@ NIF(cberl_nif_destroy) {
     enif_thread_join(handle->thread, &resp);
     queue_destroy(handle->queue);
     enif_thread_opts_destroy(handle->thread_opts);
-    enif_mutex_lock(handle->mutex);
     lcb_destroy(handle->instance);
-    enif_mutex_unlock(handle->mutex);
-    enif_mutex_destroy(handle->mutex);
     enif_release_resource(handle); 
     return A_OK(env);
 }
