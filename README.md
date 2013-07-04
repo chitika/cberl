@@ -39,7 +39,7 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
 
     %% create a connection pool  of 5 connections named cberl_default
     %% you can provide more argument like host, username, password, 
-    %% bucket and transcoder - look at [cberl.erl](https://github.com/chitika/cberl/blob/master/src/cberl.erl) for more detail 
+    %% bucket and transcoder - look at [cberl.erl](https://github.com/wcummings/cberl/blob/master/src/cberl.erl) for more detail 
     cberl:start_link(cberl_default, 5).
     {ok, <0.33.0>}
     %% Poolname, Key, Expire - 0 for infinity, Value
@@ -68,7 +68,7 @@ __flag/1:__
 
 Turns an encoder_name (or list of them) into an integer. This value is sent to CB during set operations and this is what you get in decode value. You must return a value for 'standart' encoder if you are not planning to specify an encoder for every set operation.
 
-Check out [cberl_transcoder.erl](https://github.com/aliyakamercan/cberl/blob/master/src/cberl_transcoder.erl) it is pretty straightforward.
+Check out [cberl_transcoder.erl](https://github.com/wcummings/cberl/blob/master/src/cberl_transcoder.erl) it is pretty straightforward.
 
 Performance
 -------

@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3, http/6, query_view/4, fold/3, foreach/2]).
+         mget/3, getl/3, http/6, view/4, foldl/3, foreach/2]).
 %remove
 -export([remove/2]).
 
@@ -238,25 +238,25 @@ http(PoolName, Path, Body, ContentType, Method, Type) ->
 %% DocName design doc name
 %% ViewName view name
 %% Args arguments and filters (limit etc.)
-query_view(PoolName, DocName, ViewName, Args) ->
+view(PoolName, DocName, ViewName, Args) ->
     Path = string:join(["_design", DocName, "_view", ViewName], "/"),
     Resp = case proplists:get_value(keys, Args) of
-        undefined -> 
+        undefined ->  %% FIXME maybe not have to pass in an empty json obj here
             http(PoolName, string:join([Path, query_args(Args)], "?"), "{}", "application/json", get, view);
         Keys ->
             http(PoolName, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(jiffy:encode({[{keys, Keys}]})), "application/json", post, view)
     end,
     decode_query_resp(Resp).
 
-fold(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
-    case query_view(PoolName, DocName, ViewName, Args) of
+foldl(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
+    case view(PoolName, DocName, ViewName, Args) of
         {ok, {_TotalRows, Rows}} ->
             lists:foldl(Func, Acc, Rows);
         {error, _} = E -> E
     end.
 
 foreach(Func, {PoolName, DocName, ViewName, Args}) ->
-    case query_view(PoolName, DocName, ViewName, Args) of
+    case view(PoolName, DocName, ViewName, Args) of
         {ok, {_TotalRows, Rows}} ->
             lists:foreach(Func, Rows);
         {error, _} = E -> E
@@ -288,11 +288,10 @@ decode_query_resp({ok, Resp}) ->
             {<<"rows">>,
              Rows}]} ->
             {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
-        %% FIXME: Decode error strings
         {[{<<"error">>,Error},
           {<<"reason">>,
            Reason}]} ->
-            {error, {Error, Reason}}
+            {error, {view_error(Error), Reason}}
     end.
 
 query_arg({descending, true}) -> "descending=true";
@@ -334,3 +333,8 @@ query_arg({stale, update_after}) -> "stale=update_after";
 query_arg({start_key, V}) when is_list(V) -> string:join(["start_key", V], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], "=").
+
+view_error(<<"not_found">>) -> not_found;
+view_error(<<"bad_request">>) -> bad_request;
+view_error(<<"req_timedout">>) -> req_timedout;
+view_error(Error) -> binary_to_list(list_to_atom(Error)). %% kludge until I figure out all the errors

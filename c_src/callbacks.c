@@ -115,7 +115,7 @@ void http_callback(lcb_http_request_t request,
 {
     (void)instance;
     struct libcouchbase_callback *cb = (struct libcouchbase_callback*)cookie;
-    cb = (struct libcouchbase_callback_http *)cookie;
+    cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
     if(error == LCB_SUCCESS) {
         cb->data = malloc(resp->v.v0.nbytes);

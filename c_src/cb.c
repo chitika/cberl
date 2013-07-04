@@ -639,8 +639,8 @@ void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->content_type = (char *)enif_alloc(len * sizeof(char));
     if (!enif_get_string(env, argv[2], args->content_type, len, ERL_NIF_LATIN1)) goto error3;
 
-    if (!enif_get_int(env, argv[3], &args->method)) goto error3;
-    if (!enif_get_int(env, argv[4], &args->type)) goto error3;
+    if (!enif_get_int(env, argv[3], (int*)&args->method)) goto error3;
+    if (!enif_get_int(env, argv[4], (int*)&args->type)) goto error3;
 
     return (void*)args;
 
