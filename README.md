@@ -48,8 +48,33 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
     cberl:get(cberl_default, <<"fkey">>).
     {<<"fkey">>, ReturnedCasValue, <<"cberl">>}
 
-
 For more information on all the functions -> ./rebar doc (most of documentation is out of date right now)
+
+Views
+-----
+
+cberl has new (experimental) support for querying views via the view/4 functions:
+
+    cberl:view(default, "all", "all", []).
+    {ok,{1,
+     [[{<<"id">>,<<"test">>},
+       {<<"key">>,<<"test">>},
+       {<<"value">>,null}]]}}
+
+Shorthand for foldl and foreach is also provided.
+
+    %% foldl
+    cberl:foldl(fun ([{<<"id">>, Key}|_], Acc) -> [Key|Acc] end, [], {default, "all", "all", []}).
+    [<<"test2">>,<<"test">>]
+    %% foreach
+    cberl:foreach(fun (X) -> io:format("~p~n", [X]) end, {default, "all", "all", []}).
+    [{<<"id">>,<<"test">>},{<<"key">>,<<"test">>},{<<"value">>,null}]
+    [{<<"id">>,<<"test2">>},{<<"key">>,<<"test2">>},{<<"value">>,null}]
+    ok
+    % Passing an arg
+    cberl:foreach(fun (X) -> io:format("~p~n", [X]) end, {default, "all", "all", [{key, "test"}]}).
+    [{<<"id">>,<<"test">>},{<<"key">>,<<"test">>},{<<"value">>,null}]
+    ok
 
 Custom Transcoders
 -----
