@@ -312,7 +312,7 @@ query_arg({group_level, V}) when is_integer(V) -> string:join(["group_level", in
 query_arg({inclusive_end, true}) -> "inclusive_end=true";
 query_arg({inclusive_end, false}) -> "inclusive_end=false";
 
-query_arg({key, V}) when is_list(V) -> string:join(["key", V], "=");
+query_arg({key, V}) when is_binary(V) -> string:join(["key", binary_to_list(jiffy:encode(V))], "=");
 
 query_arg({keys, V}) when is_list(V) -> string:join(["keys", jiffy:encode(V)], "=");
 
