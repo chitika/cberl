@@ -4,7 +4,7 @@
 -define('CBE_APPEND',   4).
 -define('CBE_PREPEND',  5).
 
--opaque handle() :: binary().
+-type handle() :: binary().
 
 -record(instance, {handle :: handle(), 
                    transcoder :: module()}).
