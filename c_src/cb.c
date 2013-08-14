@@ -89,12 +89,17 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     (void)lcb_set_remove_callback(handle->instance, remove_callback);
     (void)lcb_set_http_complete_callback(handle->instance, http_callback);
 
-    if (lcb_connect(handle->instance) != LCB_SUCCESS) {
-        return enif_make_tuple2(env, enif_make_atom(env, "error"),
-                enif_make_string(env, "Failed to connect libcouchbase instance to server\n", ERL_NIF_LATIN1));
+    err = lcb_connect(handle->instance);
+
+    if (err != LCB_SUCCESS) {
+        return return_lcb_error(env, err);
     }
 
-    lcb_wait(handle->instance);
+    err = lcb_wait(handle->instance);
+
+    if(err != LCB_SUCCESS) {
+        return return_lcb_error(env, err);
+    }
 
     return enif_make_atom(env, "ok");
 }
