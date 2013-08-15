@@ -59,10 +59,9 @@ NIF(cberl_nif_control)
 
     unsigned int len;
     enif_get_atom_length(env, argv[1], &len, ERL_NIF_LATIN1);
-    char buf[len+1];
-    enif_get_atom(env, argv[1], buf, len+1, ERL_NIF_LATIN1);
+    int cmd;
+    enif_get_int(env, argv[1], &cmd);
 
-    unsigned int cmd = translate_cmd(buf);
     if (cmd == -1) {
         return enif_make_badarg(env);
     }
@@ -138,32 +137,6 @@ static void* worker(void *obj)
     }
 
     return NULL;
-}
-
-static int translate_cmd(char *buf)
-{
-    // FIXME: enumerate in erlang instead
-    if (strcmp(buf, "connect") == 0) {
-        return CMD_CONNECT;
-    } else if (strcmp(buf, "store") == 0) {
-        return CMD_STORE;
-    } else if (strcmp(buf, "mget") == 0) {
-        return CMD_MGET;
-    } else if (strcmp(buf, "getl") == 0) {
-        return CMD_GETL;
-    } else if (strcmp(buf, "unlock") == 0) {
-        return CMD_UNLOCK;
-    } else if (strcmp (buf, "mtouch") == 0) {
-        return CMD_MTOUCH;
-    } else if (strcmp(buf, "arithmetic") == 0) {
-        return CMD_ARITHMETIC;
-    } else if (strcmp(buf, "remove") == 0) {
-        return CMD_REMOVE;
-    } else if (strcmp(buf, "http") == 0) {
-        return CMD_HTTP;
-    } else {
-        return -1;
-    }
 }
 
 static ErlNifFunc nif_funcs[] = {

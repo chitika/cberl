@@ -48,7 +48,7 @@ start_link(Args) ->
 init([Host, Username, Password, BucketName, Transcoder]) ->
     process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
-    ok = cberl_nif:control(Handle, connect, [Host, Username, Password, BucketName]),
+    ok = cberl_nif:control(Handle, op(connect), [Host, Username, Password, BucketName]),
     receive
         ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}};
         {error, Error} -> {stop, Error}
@@ -72,7 +72,7 @@ init([Host, Username, Password, BucketName, Transcoder]) ->
 %%--------------------------------------------------------------------
 handle_call({mtouch, Keys, ExpTimesE}, _From, 
             State = #instance{handle = Handle}) ->
-    ok = cberl_nif:control(Handle, mtouch, [Keys, ExpTimesE]),
+    ok = cberl_nif:control(Handle, op(mtouch), [Keys, ExpTimesE]),
     receive
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {reply, {error, timeout}, State}
@@ -83,7 +83,7 @@ handle_call({unlock, Key, Cas}, _From,
 handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
     StoreValue = Transcoder:encode_value(TranscoderOpts, Value), 
-    ok = cberl_nif:control(Handle, store, [operation_value(Op), Key, StoreValue, 
+    ok = cberl_nif:control(Handle, op(store), [operation_value(Op), Key, StoreValue, 
                     Transcoder:flag(TranscoderOpts), Exp, Cas]),
     receive
         Reply -> {reply, Reply, State}
@@ -91,7 +91,7 @@ handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From,
     end;
 handle_call({mget, Keys, Exp}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    ok = cberl_nif:control(Handle, mget, [Keys, Exp]),
+    ok = cberl_nif:control(Handle, op(mget), [Keys, Exp]),
     Reply = receive
         {error, Error} -> {error, Error};
         {ok, Results} ->
@@ -109,7 +109,7 @@ handle_call({mget, Keys, Exp}, _From,
     {reply, Reply, State};
 handle_call({getl, Key, Exp}, _From,
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    ok = cberl_nif:control(Handle, getl, [Key, Exp]),
+    ok = cberl_nif:control(Handle, op(getl), [Key, Exp]),
     Reply = receive
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
@@ -120,7 +120,7 @@ handle_call({getl, Key, Exp}, _From,
     {reply, Reply, State};
 handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    ok = cberl_nif:control(Handle, arithmetic, [Key, OffSet, Exp, Create, Initial]),
+    ok = cberl_nif:control(Handle, op(arithmetic), [Key, OffSet, Exp, Create, Initial]),
     Reply = receive
         {error, Error} -> {error, Error};
         {ok, {Cas, Flag, Value}} ->
@@ -131,14 +131,14 @@ handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
     {reply, Reply, State};
 handle_call({remove, Key, N}, _From,
             State = #instance{handle = Handle}) ->
-    ok = cberl_nif:control(Handle, remove, [Key, N]),
+    ok = cberl_nif:control(Handle, op(remove), [Key, N]),
     receive
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {error, timeout}
     end;
 handle_call({http, Path, Body, ContentType, Method, Chunked}, _From,
             State = #instance{handle = Handle}) ->
-    ok = cberl_nif:control(Handle, http, [Path, Body, ContentType, Method, Chunked]),
+    ok = cberl_nif:control(Handle, op(http), [Path, Body, ContentType, Method, Chunked]),
     receive
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {error, timeout}
@@ -209,3 +209,13 @@ operation_value(replace) -> ?'CBE_REPLACE';
 operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
+
+op(connect) -> 0;
+op(store) -> 1;
+op(mget) -> 2;
+op(getl) -> 3;
+op(unlock) -> 4;
+op(mtouch) -> 5;
+op(arithmetic) -> 6;
+op(remove) -> 7;
+op(http) -> 8.
