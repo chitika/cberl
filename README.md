@@ -61,20 +61,7 @@ cberl has new (experimental) support for querying views via the view/4 functions
        {<<"key">>,<<"test">>},
        {<<"value">>,null}]]}}
 
-Shorthand for foldl and foreach is also provided.
-
-    %% foldl
-    cberl:foldl(fun ([{<<"id">>, Key}|_], Acc) -> [Key|Acc] end, [], {default, "all", "all", []}).
-    [<<"test2">>,<<"test">>]
-    %% foreach
-    cberl:foreach(fun (X) -> io:format("~p~n", [X]) end, {default, "all", "all", []}).
-    [{<<"id">>,<<"test">>},{<<"key">>,<<"test">>},{<<"value">>,null}]
-    [{<<"id">>,<<"test2">>},{<<"key">>,<<"test2">>},{<<"value">>,null}]
-    ok
-    % Passing an arg
-    cberl:foreach(fun (X) -> io:format("~p~n", [X]) end, {default, "all", "all", [{key, "test"}]}).
-    [{<<"id">>,<<"test">>},{<<"key">>,<<"test">>},{<<"value">>,null}]
-    ok
+Shorthand for foldl, foldr and foreach are also provided.
 
 Custom Transcoders
 -----
