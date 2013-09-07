@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3, http/6, view/4, foldl/3, foreach/2]).
+         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
 -export([remove/2]).
 
@@ -252,6 +252,13 @@ foldl(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
     case view(PoolName, DocName, ViewName, Args) of
         {ok, {_TotalRows, Rows}} ->
             lists:foldl(Func, Acc, Rows);
+        {error, _} = E -> E
+    end.
+
+foldr(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
+    case view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foldr(Func, Acc, Rows);
         {error, _} = E -> E
     end.
 
