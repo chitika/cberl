@@ -15,7 +15,7 @@
 -export([arithmetic/6]).
 %retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
-         mget/3, getl/3]).
+         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
 -export([remove/2]).
 
@@ -222,6 +222,53 @@ arithmetic(PoolName, Key, OffSet, Exp, Create, Initial) ->
 remove(PoolName, Key) ->
     execute(PoolName, {remove, Key, 0}).
 
+%% @doc execute a command with the REST API
+%% PoolName name of connection pool
+%% Path HTTP path
+%% Body HTTP body (for POST requests)
+%% ContentType HTTP content type
+%% Method HTTP method
+%% Type Couchbase request type
+-spec http(instance(), string(), string(), string(), string(), http_type()) -> ok | {error, _}.
+http(PoolName, Path, Body, ContentType, Method, Type) ->
+    execute(PoolName, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
+
+%% @doc Query a view
+%% PoolName name of connection pool
+%% DocName design doc name
+%% ViewName view name
+%% Args arguments and filters (limit etc.)
+view(PoolName, DocName, ViewName, Args) ->
+    Path = string:join(["_design", DocName, "_view", ViewName], "/"),
+    Resp = case proplists:get_value(keys, Args) of
+        undefined ->  %% FIXME maybe not have to pass in an empty json obj here
+            http(PoolName, string:join([Path, query_args(Args)], "?"), "{}", "application/json", get, view);
+        Keys ->
+            http(PoolName, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(jiffy:encode({[{keys, Keys}]})), "application/json", post, view)
+    end,
+    decode_query_resp(Resp).
+
+foldl(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
+    case view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foldl(Func, Acc, Rows);
+        {error, _} = E -> E
+    end.
+
+foldr(Func, Acc, {PoolName, DocName, ViewName, Args}) ->
+    case view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foldr(Func, Acc, Rows);
+        {error, _} = E -> E
+    end.
+
+foreach(Func, {PoolName, DocName, ViewName, Args}) ->
+    case view(PoolName, DocName, ViewName, Args) of
+        {ok, {_TotalRows, Rows}} ->
+            lists:foreach(Func, Rows);
+        {error, _} = E -> E
+    end.
+
 stop(PoolName) ->
     poolboy:stop(PoolName).
 
@@ -229,3 +276,72 @@ execute(PoolName, Cmd) ->
     poolboy:transaction(PoolName, fun(Worker) ->
             gen_server:call(Worker, Cmd)
        end).
+
+http_type(view) -> 0;
+http_type(management) -> 1;
+http_type(raw) -> 2.
+
+http_method(get) -> 0;
+http_method(post) -> 1;
+http_method(put) -> 2;
+http_method(delete) -> 3.
+
+query_args(Args) when is_list(Args) ->
+    string:join([query_arg(A) || A <- Args], "&").
+
+decode_query_resp({ok, Resp}) ->
+    case jiffy:decode(Resp) of
+        {[{<<"total_rows">>, TotalRows},
+            {<<"rows">>,
+             Rows}]} ->
+            {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
+        {[{<<"error">>,Error},
+          {<<"reason">>,
+           Reason}]} ->
+            {error, {view_error(Error), Reason}}
+    end.
+
+query_arg({descending, true}) -> "descending=true";
+query_arg({descending, false}) -> "descending=false";
+
+query_arg({endkey, V}) when is_list(V) -> string:join(["endkey", V], "=");
+
+query_arg({endkey_docid, V}) when is_list(V) -> string:join(["endkey_docid", V], "=");
+
+query_arg({full_set, true}) -> "full_set=true";
+query_arg({full_set, false}) -> "full_set=false";
+
+query_arg({group, true}) -> "group=true";
+query_arg({group, false}) -> "group=false";
+
+query_arg({group_level, V}) when is_integer(V) -> string:join(["group_level", integer_to_list(V)], "=");
+
+query_arg({inclusive_end, true}) -> "inclusive_end=true";
+query_arg({inclusive_end, false}) -> "inclusive_end=false";
+
+query_arg({key, V}) when is_binary(V) -> string:join(["key", binary_to_list(jiffy:encode(V))], "=");
+
+query_arg({keys, V}) when is_list(V) -> string:join(["keys", jiffy:encode(V)], "=");
+
+query_arg({limit, V}) when is_integer(V) -> string:join(["limit", integer_to_list(V)], "=");
+
+query_arg({on_error, continue}) -> "on_error=continue";
+query_arg({on_error, stop}) -> "on_error=stop";
+
+query_arg({reduce, true}) -> "reduce=true";
+query_arg({reduce, false}) -> "reduce=false";
+
+query_arg({skip, V}) when is_integer(V) -> string:join(["skip", integer_to_list(V)], "=");
+
+query_arg({stale, false}) -> "stale=false";
+query_arg({stale, ok}) -> "stale=ok";
+query_arg({stale, update_after}) -> "stale=update_after";
+
+query_arg({start_key, V}) when is_list(V) -> string:join(["start_key", V], "=");
+
+query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], "=").
+
+view_error(<<"not_found">>) -> not_found;
+view_error(<<"bad_request">>) -> bad_request;
+view_error(<<"req_timedout">>) -> req_timedout;
+view_error(Error) -> binary_to_list(list_to_atom(Error)). %% kludge until I figure out all the errors

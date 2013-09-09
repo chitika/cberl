@@ -9,8 +9,7 @@ void error_callback(lcb_t instance,
                     const char *errinfo)
 {
     (void)instance;
-    fprintf(stderr, "Fatal error\r\n");
-    exit(EXIT_FAILURE);
+    // do nothing
 }
 
 void get_callback(lcb_t instance,
@@ -44,8 +43,8 @@ void arithmetic_callback(lcb_t instance,
     cb = (struct libcouchbase_callback *)cookie;
     cb->error = error;
     cb->flag = 1;
-    cb->cas = resp->v.v0.cas;
     if (error == LCB_SUCCESS) {
+        cb->cas = resp->v.v0.cas;
         cb->data = malloc(20*sizeof(char));
         memset(cb->data, 0, 20);
         sprintf(cb->data, "%llu", resp->v.v0.value);
@@ -105,3 +104,19 @@ void remove_callback(lcb_t instance,
     cb->error = error;
 }
 
+void http_callback(lcb_http_request_t request,
+                   lcb_t instance,
+                   const void* cookie,
+                   lcb_error_t error,
+                   const lcb_http_resp_t *resp)
+{
+    (void)instance;
+    struct libcouchbase_callback *cb = (struct libcouchbase_callback*)cookie;
+    cb = (struct libcouchbase_callback *)cookie;
+    cb->error = error;
+    if(error == LCB_SUCCESS) {
+        cb->data = malloc(resp->v.v0.nbytes);
+        cb->size = resp->v.v0.nbytes;
+        memcpy(cb->data, resp->v.v0.bytes, resp->v.v0.nbytes);
+    }
+}

@@ -15,7 +15,7 @@ new(_Id) ->
     {ok, bench_testing}.
 
 run(get, KeyGen, _ValueGen, PoolName) ->
-    Key = KeyGen(),
+    Key = list_to_binary(KeyGen()),
     case cberl:get(PoolName, Key) of
         {Key, _Cas, _Value} ->
             {ok, PoolName};
@@ -27,7 +27,7 @@ run(get, KeyGen, _ValueGen, PoolName) ->
             {error, Error, PoolName}
     end;
 run(set, KeyGen, _ValueGen, PoolName) ->
-    Key = KeyGen(),
+    Key = list_to_binary(KeyGen()),
     Value = rand_val(50),
     case cberl:set(PoolName, Key, 60, Value) of
         ok ->
