@@ -39,17 +39,29 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
 
     %% create a connection pool  of 5 connections named cberl_default
     %% you can provide more argument like host, username, password, 
-    %% bucket and transcoder - look at [cberl.erl](https://github.com/chitika/cberl/blob/master/src/cberl.erl) for more detail 
+    %% bucket and transcoder - look at [cberl.erl](https://github.com/wcummings/cberl/blob/master/src/cberl.erl) for more detail 
     cberl:start_link(cberl_default, 5).
     {ok, <0.33.0>}
     %% Poolname, Key, Expire - 0 for infinity, Value
-    cberl:set(cberl_default, "fkey", 0, "cberl").
+    cberl:set(cberl_default, <<"fkey">>, 0, <<"cberl">>).
     ok
-    cberl:get(cberl_default, "fkey").
-    {"fkey", ReturnedCasValue, "cberl"}
-
+    cberl:get(cberl_default, <<"fkey">>).
+    {<<"fkey">>, ReturnedCasValue, <<"cberl">>}
 
 For more information on all the functions -> ./rebar doc (most of documentation is out of date right now)
+
+Views
+-----
+
+cberl has new (experimental) support for querying views via the view/4 functions:
+
+    cberl:view(default, "all", "all", []).
+    {ok,{1,
+     [[{<<"id">>,<<"test">>},
+       {<<"key">>,<<"test">>},
+       {<<"value">>,null}]]}}
+
+Shorthand for foldl, foldr and foreach are also provided.
 
 Custom Transcoders
 -----
@@ -68,7 +80,7 @@ __flag/1:__
 
 Turns an encoder_name (or list of them) into an integer. This value is sent to CB during set operations and this is what you get in decode value. You must return a value for 'standart' encoder if you are not planning to specify an encoder for every set operation.
 
-Check out [cberl_transcoder.erl](https://github.com/aliyakamercan/cberl/blob/master/src/cberl_transcoder.erl) it is pretty straightforward.
+Check out [cberl_transcoder.erl](https://github.com/wcummings/cberl/blob/master/src/cberl_transcoder.erl) it is pretty straightforward.
 
 Performance
 -------
@@ -80,6 +92,4 @@ TODO
 
 1) Update documentation
 
-2) Add missing methods (querying documents and informational methods)
-
-3) Write more tests
+2) Write more tests
