@@ -77,7 +77,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
 
     if (err != LCB_SUCCESS) {
         return enif_make_tuple2(env, enif_make_atom(env, "error"),
-                enif_make_string(env, "Failed to create libcouchbase instance\n", ERL_NIF_LATIN1));
+                enif_make_string(env, lcb_strerror(NULL, err), ERL_NIF_LATIN1));
     }
 
     (void)lcb_set_error_callback(handle->instance, error_callback);
