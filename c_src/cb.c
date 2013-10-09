@@ -112,8 +112,8 @@ void* cb_store_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ErlNifBinary key_binary;
 
     if (!enif_get_int(env, argv[0], &args->operation)) goto error0;
-    if (!enif_inspect_binary(env, argv[1], &key_binary)) goto error0;
-    if (!enif_inspect_binary(env, argv[2], &value_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[1], &key_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[2], &value_binary)) goto error0;
 
     args->nkey = key_binary.size;
     args->nbytes = value_binary.size;
@@ -191,7 +191,7 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     tail = argv[0];
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        if (!enif_inspect_binary(env, *currKey, &key_binary)) goto error1;
+        if (!enif_inspect_iolist_as_binary(env, *currKey, &key_binary)) goto error1;
         args->keys[i] = malloc(sizeof(char) * key_binary.size);
         memcpy(args->keys[i], key_binary.data, key_binary.size);
         args->nkeys[i] = key_binary.size;
@@ -300,7 +300,7 @@ void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ErlNifBinary key_binary;
 
-    if (!enif_inspect_binary(env, argv[0], &key_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &key_binary)) goto error0;
     args->nkey = key_binary.size;
     args->key = (char *) malloc(key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
@@ -354,7 +354,7 @@ void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ErlNifBinary key_binary;
 
-    if (!enif_inspect_binary(env, argv[0], &key_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &key_binary)) goto error0;
     args->nkey = key_binary.size;
     args->key = (char *) malloc(key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
@@ -414,7 +414,7 @@ void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     tail = argv[0];
     int i = 0;
     while(0 != enif_get_list_cell(env, tail, currKey, &tail)) {
-        if (!enif_inspect_binary(env, *currKey, &key_binary)) goto error1;
+        if (!enif_inspect_iolist_as_binary(env, *currKey, &key_binary)) goto error1;
         args->keys[i] = malloc(sizeof(char) * key_binary.size);
         memcpy(args->keys[i], key_binary.data, key_binary.size);
         args->nkeys[i] = key_binary.size;
@@ -519,7 +519,7 @@ void* cb_arithmetic_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ErlNifBinary key_binary;
 
-    if (!enif_inspect_binary(env, argv[0], &key_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &key_binary)) goto error0;
     args->key = malloc(sizeof(char) * key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
     args->nkey = key_binary.size;
@@ -574,7 +574,7 @@ void* cb_remove_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ErlNifBinary key_binary;
 
-    if (!enif_inspect_binary(env, argv[0], &key_binary)) goto error0;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &key_binary)) goto error0;
     args->key = malloc(sizeof(char) * key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
     args->nkey = key_binary.size;
