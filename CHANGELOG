@@ -1,5 +1,9 @@
+-- 0.0.3 (2014-02-19)
+Cleanup of the package and version bump with new compilation method.
+
+-- 0.0.2 (2013-02-28)
+Rewritten w/ threading, fixing a number of bugs
+
 --  0.0.1
 Initial version
 
-2013-02-28 -- 0.0.2
-Rewritten w/ threading, fixing a number of bugs
