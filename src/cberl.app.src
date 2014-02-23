@@ -5,7 +5,9 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  poolboy,
+                  jiffy
                  ]},
   {mod, { cberl_app, []}},
   {env, []}
