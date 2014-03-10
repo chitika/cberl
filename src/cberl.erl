@@ -51,7 +51,7 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) -
                 {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
-    poolboy:start(PoolArgs, [Host, Username, Password, BucketName, Transcoder]).
+    poolboy:start_link(PoolArgs, [Host, Username, Password, BucketName, Transcoder]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% STORE OPERATIONS %%%
