@@ -305,7 +305,7 @@ void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->key = (char *) malloc(key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
     
-    if (!enif_get_int(env, argv[2], &args->exp)) goto error1;
+    if (!enif_get_int(env, argv[1], &args->exp)) goto error1;
 
     return (void*)args;
 
