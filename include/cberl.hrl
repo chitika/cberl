@@ -14,3 +14,4 @@
 -type operation_type() :: add | replace | set | append | prepend.
 -type instance() :: #instance{}.
 -type http_type() :: view | management | raw.
+-type http_method() :: get | post | put | delete.

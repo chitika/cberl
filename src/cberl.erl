@@ -88,7 +88,7 @@ set(PoolPid, Key, Exp, Value) ->
     set(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, set, "", Key, Value, Exp)
--spec set(pid(), key(), integer(), value(), integer()) -> ok | {error, _}.
+-spec set(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
 set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, set, Key, Value, TranscoderOpts, Exp, 0).
 
@@ -108,11 +108,14 @@ prepend(PoolPid, Cas, Key, Value) ->
 %% PoolPid libcouchbase instance to use
 %% Key key to touch
 %% ExpTime a new expiration time for the item 
--spec mtouch(pid(), key(), integer()) -> ok | {error, _}.
+
+-spec touch(pid(), key(), integer()) -> {ok, any()}.
 touch(PoolPid, Key, ExpTime) ->
     {ok, Return} = mtouch(PoolPid, [Key], [ExpTime]),
     {ok, hd(Return)}.
 
+-spec mtouch(pid(), [key()], integer() | [integer()])
+	    -> {ok, any()} | {error, any()}.
 mtouch(PoolPid, Keys, ExpTime) when is_integer(ExpTime) ->
     mtouch(PoolPid, Keys, [ExpTime]);
 mtouch(PoolPid, Keys, ExpTimes) ->
@@ -194,7 +197,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get   
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+-spec mget(pid(), [key()], integer()) -> list() | {error, _}.
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp}).
     
@@ -234,7 +237,8 @@ remove(PoolPid, Key) ->
 %% ContentType HTTP content type
 %% Method HTTP method
 %% Type Couchbase request type
--spec http(pid(), string(), string(), string(), string(), http_type()) -> ok | {error, _}.
+-spec http(pid(), string(), string(), string(), http_method(), http_type())
+	  -> {ok, binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
