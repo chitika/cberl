@@ -3,7 +3,7 @@
 
 -on_load(init/0).
 
--define(NIF_STUB, exit(nif_library_not_loaded)).
+-define(NIF_STUB, erlang:nif_error(nif_library_not_loaded)).
 
 init() ->
     PrivDir = case code:priv_dir(?MODULE) of
