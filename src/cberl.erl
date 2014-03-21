@@ -41,17 +41,22 @@ start_link(PoolName, NumCon, Host, Username, Password) ->
 %% Username the username to use
 %% Password The password
 %% bucket The bucket to connect to
--spec start_link(atom(), integer(), string(), string(), string(), string()) -> {ok, instance()} | {error, _}.
+%% @equiv start_link(PoolName, NumCon, Host, Username, Password, cberl_transcoder).
 start_link(PoolName, NumCon, Host, Username, Password, BucketName) ->
     start_link(PoolName, NumCon, Host, Username, Password, BucketName, cberl_transcoder).
 
-
+-spec start_link(atom(), integer(), string(), string(), string(), string(), atom()) -> {ok, instance()} | {error, _}.
 start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) ->
     SizeArgs = [{size, NumCon},
                 {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
-    poolboy:start_link(PoolArgs, [Host, Username, Password, BucketName, Transcoder]).
+    WorkerArgs = [{host, Host},
+		  {username, Username},
+		  {password, Password},
+		  {bucketname, BucketName},
+		  {transcoder, Transcoder}],
+    poolboy:start_link(PoolArgs, WorkerArgs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% STORE OPERATIONS %%%
@@ -344,4 +349,4 @@ query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], 
 view_error(<<"not_found">>) -> not_found;
 view_error(<<"bad_request">>) -> bad_request;
 view_error(<<"req_timedout">>) -> req_timedout;
-view_error(Error) -> binary_to_list(list_to_atom(Error)). %% kludge until I figure out all the errors
+view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figure out all the errors

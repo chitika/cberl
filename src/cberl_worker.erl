@@ -45,7 +45,8 @@ start_link(Args) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Host, Username, Password, BucketName, Transcoder]) ->
+init([{host, Host}, {username, Username}, {password, Password},
+      {bucketname, BucketName}, {transcoder, Transcoder}]) ->
     process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, op(connect), [Host, Username, Password, BucketName]),
@@ -210,6 +211,7 @@ operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
 
+-spec op(atom()) -> integer().
 op(connect) -> 0;
 op(store) -> 1;
 op(mget) -> 2;
