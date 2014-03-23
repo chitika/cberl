@@ -204,11 +204,11 @@ operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
 
 -spec op(atom()) -> integer().
-op(connect) -> 0;
-op(store) -> 1;
-op(mget) -> 2;
-op(unlock) -> 3;
-op(mtouch) -> 4;
-op(arithmetic) -> 5;
-op(remove) -> 6;
-op(http) -> 7.
+op(connect) -> ?'CMD_CONNECT';
+op(store) -> ?'CMD_STORE';
+op(mget) -> ?'CMD_MGET';
+op(unlock) -> ?'CMD_UNLOCK';
+op(mtouch) -> ?'CMD_MTOUCH';
+op(arithmetic) -> ?'CMD_ARITHMETIC';
+op(remove) -> ?'CMD_REMOVE';
+op(http) -> ?'CMD_HTTP'.
