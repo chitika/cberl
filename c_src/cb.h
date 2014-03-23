@@ -33,7 +33,7 @@ typedef struct mget_args {
 typedef struct unlock_args {
     void * key;
     unsigned int nkey;
-    int cas;
+    lcb_cas_t cas;
 } unlock_args_t;
 
 typedef struct mtouch_args {

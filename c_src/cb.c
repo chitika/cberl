@@ -307,8 +307,8 @@ void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->nkey = key_binary.size;
     args->key = (char *) malloc(key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
-    
-    if (!enif_get_int(env, argv[1], &args->cas)) goto error1;
+
+    if (!enif_get_uint64(env, argv[1], (ErlNifUInt64*)&args->cas)) goto error1;
 
     return (void*)args;
 
