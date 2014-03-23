@@ -162,7 +162,7 @@ mget(PoolPid, Keys) ->
 
 -spec get_and_lock(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 get_and_lock(PoolPid, Key, Exp) ->
-    getl(PoolPid, Key, Exp).
+    hd(getl(PoolPid, Key, Exp)).
 
 -spec unlock(pid(), key(), integer()) -> ok | {error, _}.
 unlock(PoolPid, Key, Cas) ->
@@ -199,7 +199,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %%      pass a negative number for infinity
 -spec mget(pid(), [key()], integer()) -> list() | {error, _}.
 mget(PoolPid, Keys, Exp) ->
-    execute(PoolPid, {mget, Keys, Exp}).
+    execute(PoolPid, {mget, Keys, Exp, 0}).
     
 %% @doc Get an item with a lock that has a timeout
 %% Instance libcouchbase instance to use
@@ -208,7 +208,7 @@ mget(PoolPid, Keys, Exp) ->
 %%  Exp When the lock should expire
 -spec getl(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 getl(PoolPid, Key, Exp) ->
-    execute(PoolPid, {getl, Key, Exp}).
+    execute(PoolPid, {mget, [Key], Exp, 1}).
    
 %% @doc perform an arithmetic operation on the given key
 %% Instance libcouchbase instance to use

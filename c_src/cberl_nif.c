@@ -29,8 +29,6 @@ NIF(cberl_nif_new)
     handle->args_calltable[CMD_STORE]      = cb_store_args;
     handle->calltable[CMD_MGET]            = cb_mget;
     handle->args_calltable[CMD_MGET]       = cb_mget_args;
-    handle->calltable[CMD_GETL]            = cb_getl;
-    handle->args_calltable[CMD_GETL]       = cb_getl_args;
     handle->calltable[CMD_UNLOCK]          = cb_unlock;
     handle->args_calltable[CMD_UNLOCK]     = cb_unlock_args;
     handle->calltable[CMD_MTOUCH]          = cb_mtouch;
