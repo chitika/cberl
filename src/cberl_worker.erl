@@ -14,8 +14,6 @@
          terminate/2,
          code_change/3]).
 
--define(TIMEOUT, infinity).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -53,7 +51,6 @@ init([{host, Host}, {username, Username}, {password, Password},
     receive
         ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}};
         {error, Error} -> {stop, Error}
-    after ?TIMEOUT -> {error, timeout}
     end.
 
 
@@ -91,7 +88,6 @@ handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From,
                            Transcoder:flag(TranscoderOpts), Exp, Cas]),
     receive
         Reply -> {reply, Reply, State}
-    after ?TIMEOUT -> {reply, {error, timeout}, State}
     end;
 handle_call({mget, Keys, Exp, Lock}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
@@ -108,7 +104,6 @@ handle_call({mget, Keys, Exp, Lock}, _From,
                                 Result
                         end
                 end, Results)
-    after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
 handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
@@ -127,14 +122,12 @@ handle_call({remove, Key, N}, _From,
     ok = cberl_nif:control(Handle, op(remove), [Key, N]),
     receive
         Reply -> {reply, Reply, State}
-    after ?TIMEOUT -> {error, timeout}
     end;
 handle_call({http, Path, Body, ContentType, Method, Chunked}, _From,
             State = #instance{handle = Handle}) ->
     ok = cberl_nif:control(Handle, op(http), [Path, Body, ContentType, Method, Chunked]),
     receive
         Reply -> {reply, Reply, State}
-    after ?TIMEOUT -> {error, timeout}
     end;
 handle_call(_Request, _From, State) ->
     Reply = ok,
