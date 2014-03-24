@@ -199,6 +199,7 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
     
     if (!enif_get_int(env, argv[1], &args->exp)) goto error1;
+    if (!enif_get_int(env, argv[2], &args->lock)) goto error1;
 
     free(currKey);
 
@@ -235,6 +236,7 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     void** keys = args->keys;
     size_t* nkeys = args->nkeys;
     int exp = args->exp;
+    int lock = args->lock;
     int i = 0;
 
     cb.currKey = 0;
@@ -249,6 +251,7 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
       get->v.v0.key = keys[i];
       get->v.v0.nkey = nkeys[i];
       get->v.v0.exptime = exp;
+      get->v.v0.lock = lock;
       commands[i] = get;
     }
 
@@ -294,60 +297,6 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     return enif_make_tuple2(env, A_OK(env), returnValue);
 }
 
-void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-    getl_args_t* args = (getl_args_t*)enif_alloc(sizeof(getl_args_t));
-
-    ErlNifBinary key_binary;
-
-    if (!enif_inspect_iolist_as_binary(env, argv[0], &key_binary)) goto error0;
-    args->nkey = key_binary.size;
-    args->key = (char *) malloc(key_binary.size);
-    memcpy(args->key, key_binary.data, key_binary.size);
-    
-    if (!enif_get_int(env, argv[2], &args->exp)) goto error1;
-
-    return (void*)args;
-
-    error1:
-    free(args->key);
-    error0:
-    enif_free(args);
-
-    return NULL;
-}
-
-ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj)
-{
-    getl_args_t* args = (getl_args_t*)obj;
-
-    struct libcouchbase_callback cb; 
-
-    lcb_error_t ret; 
-      
-    lcb_get_cmd_t cmd;
-    const lcb_get_cmd_t *commands[1];
-    commands[0] = &cmd;
-    memset(&cmd, 0, sizeof(cmd));
-    cmd.v.v0.key = args->key;
-    cmd.v.v0.nkey = args->nkey;
-    cmd.v.v0.exptime = args->exp;
-    cmd.v.v0.lock = 1;
-    ret = lcb_get(handle->instance, &cb, 1, commands);
- 
-    free(args->key);
-
-    if (ret != LCB_SUCCESS) {
-        return return_lcb_error(env, ret);
-    }
-    lcb_wait(handle->instance);
-    if(cb.error != LCB_SUCCESS) {
-        return return_lcb_error(env, cb.error);
-    } 
-
-    return enif_make_tuple2(env, A_OK(env), return_value(env, &cb));   
-}
-
 void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     unlock_args_t* args = (unlock_args_t*)enif_alloc(sizeof(unlock_args_t));
@@ -358,8 +307,8 @@ void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->nkey = key_binary.size;
     args->key = (char *) malloc(key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
-    
-    if (!enif_get_int(env, argv[1], &args->cas)) goto error1;
+
+    if (!enif_get_uint64(env, argv[1], (ErlNifUInt64*)&args->cas)) goto error1;
 
     return (void*)args;
 

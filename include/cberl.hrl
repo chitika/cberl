@@ -4,6 +4,15 @@
 -define('CBE_APPEND',   4).
 -define('CBE_PREPEND',  5).
 
+-define('CMD_CONNECT',    0).
+-define('CMD_STORE',      1).
+-define('CMD_MGET',       2).
+-define('CMD_UNLOCK',     3).
+-define('CMD_MTOUCH',     4).
+-define('CMD_ARITHMETIC', 5).
+-define('CMD_REMOVE',     6).
+-define('CMD_HTTP',       7).
+
 -type handle() :: binary().
 
 -record(instance, {handle :: handle(), 

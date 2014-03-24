@@ -149,7 +149,7 @@ decr(PoolPid, Key, OffSet, Default, Exp) ->
 %%% RETRIEVAL METHODS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec get_and_touch(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+-spec get_and_touch(pid(), key(), integer()) -> [{ok, integer(), value()} | {error, _}].
 get_and_touch(PoolPid, Key, Exp) -> 
     mget(PoolPid, [Key], Exp).
 
@@ -162,7 +162,7 @@ mget(PoolPid, Keys) ->
 
 -spec get_and_lock(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 get_and_lock(PoolPid, Key, Exp) ->
-    getl(PoolPid, Key, Exp).
+    hd(getl(PoolPid, Key, Exp)).
 
 -spec unlock(pid(), key(), integer()) -> ok | {error, _}.
 unlock(PoolPid, Key, Cas) ->
@@ -197,18 +197,18 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get   
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), [key()], integer()) -> list() | {error, _}.
+-spec mget(pid(), [key()], integer()) -> list().
 mget(PoolPid, Keys, Exp) ->
-    execute(PoolPid, {mget, Keys, Exp}).
+    execute(PoolPid, {mget, Keys, Exp, 0}).
     
 %% @doc Get an item with a lock that has a timeout
 %% Instance libcouchbase instance to use
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+-spec getl(pid(), key(), integer()) -> list().
 getl(PoolPid, Key, Exp) ->
-    execute(PoolPid, {getl, Key, Exp}).
+    execute(PoolPid, {mget, [Key], Exp, 1}).
    
 %% @doc perform an arithmetic operation on the given key
 %% Instance libcouchbase instance to use
