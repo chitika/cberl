@@ -14,7 +14,7 @@
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 -export([arithmetic/6]).
 %retrieval operations
--export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3, 
+-export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
 -export([remove/2]).
@@ -107,7 +107,7 @@ prepend(PoolPid, Cas, Key, Value) ->
 %% @doc Touch (set expiration time) on the given key
 %% PoolPid libcouchbase instance to use
 %% Key key to touch
-%% ExpTime a new expiration time for the item 
+%% ExpTime a new expiration time for the item
 
 -spec touch(pid(), key(), integer()) -> {ok, any()}.
 touch(PoolPid, Key, ExpTime) ->
@@ -122,9 +122,9 @@ mtouch(PoolPid, Keys, ExpTimes) ->
     ExpTimesE = case length(Keys) - length(ExpTimes) of
         R when R > 0 ->
             ExpTimes ++ lists:duplicate(R, lists:last(ExpTimes));
-        _ -> 
+        _ ->
             ExpTimes
-    end, 
+    end,
     execute(PoolPid, {mtouch, Keys, ExpTimesE}).
 
 incr(PoolPid, Key, OffSet) ->
@@ -150,7 +150,7 @@ decr(PoolPid, Key, OffSet, Default, Exp) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec get_and_touch(pid(), key(), integer()) -> [{ok, integer(), value()} | {error, _}].
-get_and_touch(PoolPid, Key, Exp) -> 
+get_and_touch(PoolPid, Key, Exp) ->
     mget(PoolPid, [Key], Exp).
 
 -spec get(pid(), key()) -> {ok, integer(), value()} | {error, _}.
@@ -174,33 +174,33 @@ unlock(PoolPid, Key, Cas) ->
 %%          add : Add the item to the cache, but fail if the object exists already
 %%          replace: Replace the existing object in the cache
 %%          set : Unconditionally set the object in the cache
-%%          append/prepend : Append/Prepend this object to the existing object 
-%% Key the key to set         
+%%          append/prepend : Append/Prepend this object to the existing object
+%% Key the key to set
 %% Value the value to set
 %% Transcoder to encode the value
 %% Exp When the object should expire. The expiration time is
 %%     either an offset into the future.. OR an absolute
 %%     timestamp, depending on how large (numerically) the
 %%     expiration is. if the expiration exceeds 30 days
-%%     (i.e. 24 * 3600 * 30) then it's an absolute timestamp. 
+%%     (i.e. 24 * 3600 * 30) then it's an absolute timestamp.
 %%     pass 0 for infinity
 %% CAS
--spec store(pid(), operation_type(), key(), value(), atom(), 
+-spec store(pid(), operation_type(), key(), value(), atom(),
             integer(), integer()) -> ok | {error, _}.
 store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
     execute(PoolPid, {store, Op, Key, Value,
                        TranscoderOpts, Exp, Cas}).
-    
+
 %% @doc get the value for the given key
 %% Instance libcouchbase instance to use
-%% HashKey the key to use for hashing 
-%% Key the key to get   
+%% HashKey the key to use for hashing
+%% Key the key to get
 %% Exp When the object should expire
 %%      pass a negative number for infinity
 -spec mget(pid(), [key()], integer()) -> list().
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
-    
+
 %% @doc Get an item with a lock that has a timeout
 %% Instance libcouchbase instance to use
 %%  HashKey the key to use for hashing
@@ -209,7 +209,7 @@ mget(PoolPid, Keys, Exp) ->
 -spec getl(pid(), key(), integer()) -> list().
 getl(PoolPid, Key, Exp) ->
     execute(PoolPid, {mget, [Key], Exp, 1}).
-   
+
 %% @doc perform an arithmetic operation on the given key
 %% Instance libcouchbase instance to use
 %% Key key to perform on
@@ -217,7 +217,7 @@ getl(PoolPid, Key, Exp) ->
 %% Exp When the object should expire
 %% Create set to true if you want the object to be created if it
 %%        doesn't exist.
-%% Initial The initial value of the object if we create it       
+%% Initial The initial value of the object if we create it
 -spec arithmetic(pid(), key(), integer(), integer(), integer(), integer()) ->
    ok | {error, _}.
 arithmetic(PoolPid, Key, OffSet, Exp, Create, Initial) ->
@@ -300,13 +300,11 @@ query_args(Args) when is_list(Args) ->
 
 decode_query_resp({ok, Resp}) ->
     case jiffy:decode(Resp) of
-        {[{<<"total_rows">>, TotalRows},
-            {<<"rows">>,
-             Rows}]} ->
+        {[{<<"total_rows">>, TotalRows}, {<<"rows">>, Rows}]} ->
             {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
-        {[{<<"error">>,Error},
-          {<<"reason">>,
-           Reason}]} ->
+        {[{<<"rows">>, Rows}]} ->
+            {ok, {lists:map(fun ({Row}) -> Row end, Rows)}};
+        {[{<<"error">>,Error}, {<<"reason">>, Reason}]} ->
             {error, {view_error(Error), Reason}}
     end.
 
