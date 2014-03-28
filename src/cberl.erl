@@ -300,13 +300,11 @@ query_args(Args) when is_list(Args) ->
 
 decode_query_resp({ok, Resp}) ->
     case jiffy:decode(Resp) of
-        {[{<<"total_rows">>, TotalRows},
-            {<<"rows">>,
-             Rows}]} ->
+        {[{<<"total_rows">>, TotalRows}, {<<"rows">>, Rows}]} ->
             {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
-        {[{<<"error">>,Error},
-          {<<"reason">>,
-           Reason}]} ->
+        {[{<<"rows">>, Rows}]} ->
+            {ok, {lists:map(fun ({Row}) -> Row end, Rows)}};
+        {[{<<"error">>,Error}, {<<"reason">>, Reason}]} ->
             {error, {view_error(Error), Reason}}
     end.
 
