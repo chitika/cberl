@@ -5,7 +5,7 @@
 -module(cberl).
 -include("cberl.hrl").
 
--export([start_link/2, start_link/3, start_link/5, start_link/6]).
+-export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
 -export([stop/1]).
 %store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5, store/7]).
