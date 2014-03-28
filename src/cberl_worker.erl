@@ -45,7 +45,8 @@ start_link(Args) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Host, Username, Password, BucketName, Transcoder]) ->
+init([{host, Host}, {username, Username}, {password, Password},
+      {bucketname, BucketName}, {transcoder, Transcoder}]) ->
     process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, op(connect), [Host, Username, Password, BucketName]),
@@ -79,19 +80,22 @@ handle_call({mtouch, Keys, ExpTimesE}, _From,
     end;
 handle_call({unlock, Key, Cas}, _From, 
             State = #instance{handle = Handle}) ->
-    {reply, cberl_nif:unlock(Handle, Key, Cas), State};
+    cberl_nif:control(Handle, op(unlock), [Key, Cas]),
+    receive
+        Reply -> {reply, Reply, State}
+    end;
 handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
     StoreValue = Transcoder:encode_value(TranscoderOpts, Value), 
     ok = cberl_nif:control(Handle, op(store), [operation_value(Op), Key, StoreValue, 
-                    Transcoder:flag(TranscoderOpts), Exp, Cas]),
+                           Transcoder:flag(TranscoderOpts), Exp, Cas]),
     receive
         Reply -> {reply, Reply, State}
     after ?TIMEOUT -> {reply, {error, timeout}, State}
     end;
-handle_call({mget, Keys, Exp}, _From, 
+handle_call({mget, Keys, Exp, Lock}, _From, 
             State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    ok = cberl_nif:control(Handle, op(mget), [Keys, Exp]),
+    ok = cberl_nif:control(Handle, op(mget), [Keys, Exp, Lock]),
     Reply = receive
         {error, Error} -> {error, Error};
         {ok, Results} ->
@@ -104,17 +108,6 @@ handle_call({mget, Keys, Exp}, _From,
                                 Result
                         end
                 end, Results)
-    after ?TIMEOUT -> {error, timeout}
-    end,
-    {reply, Reply, State};
-handle_call({getl, Key, Exp}, _From,
-            State = #instance{handle = Handle, transcoder = Transcoder}) ->
-    ok = cberl_nif:control(Handle, op(getl), [Key, Exp]),
-    Reply = receive
-        {error, Error} -> {error, Error};
-        {ok, {Cas, Flag, Value}} ->
-            DecodedValue = Transcoder:decode_value(Flag, Value),
-            {ok, Cas, DecodedValue}
     after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
@@ -210,12 +203,12 @@ operation_value(set) -> ?'CBE_SET';
 operation_value(append) -> ?'CBE_APPEND';
 operation_value(prepend) -> ?'CBE_PREPEND'.
 
-op(connect) -> 0;
-op(store) -> 1;
-op(mget) -> 2;
-op(getl) -> 3;
-op(unlock) -> 4;
-op(mtouch) -> 5;
-op(arithmetic) -> 6;
-op(remove) -> 7;
-op(http) -> 8.
+-spec op(atom()) -> integer().
+op(connect) -> ?'CMD_CONNECT';
+op(store) -> ?'CMD_STORE';
+op(mget) -> ?'CMD_MGET';
+op(unlock) -> ?'CMD_UNLOCK';
+op(mtouch) -> ?'CMD_MTOUCH';
+op(arithmetic) -> ?'CMD_ARITHMETIC';
+op(remove) -> ?'CMD_REMOVE';
+op(http) -> ?'CMD_HTTP'.

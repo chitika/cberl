@@ -27,18 +27,13 @@ typedef struct mget_args {
     void** keys;
     size_t* nkeys;
     int exp;
+    int lock;
 } mget_args_t;
-
-typedef struct getl_args {
-    void * key;
-    unsigned int nkey;
-    int exp;
-} getl_args_t;
 
 typedef struct unlock_args {
     void * key;
     unsigned int nkey;
-    int cas;
+    lcb_cas_t cas;
 } unlock_args_t;
 
 typedef struct mtouch_args {
@@ -77,8 +72,6 @@ void* cb_store_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj);
-void* cb_getl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
-ERL_NIF_TERM cb_getl(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_unlock_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
