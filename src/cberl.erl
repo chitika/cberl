@@ -344,9 +344,9 @@ query_arg({stale, false}) -> "stale=false";
 query_arg({stale, ok}) -> "stale=ok";
 query_arg({stale, update_after}) -> "stale=update_after";
 
-query_arg({start_key, V}) when is_list(V) -> string:join(["start_key", V], "=");
+query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
 
-query_arg({startkey_docid, V}) when is_list(V) -> string:join(["start_key", V], "=").
+query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
 view_error(<<"not_found">>) -> not_found;
 view_error(<<"bad_request">>) -> bad_request;
