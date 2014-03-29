@@ -73,7 +73,6 @@ handle_call({mtouch, Keys, ExpTimesE}, _From,
     ok = cberl_nif:control(Handle, op(mtouch), [Keys, ExpTimesE]),
     receive
         Reply -> {reply, Reply, State}
-    after ?TIMEOUT -> {reply, {error, timeout}, State}
     end;
 handle_call({unlock, Key, Cas}, _From, 
             State = #instance{handle = Handle}) ->
@@ -114,7 +113,6 @@ handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From,
         {ok, {Cas, Flag, Value}} ->
             DecodedValue = Transcoder:decode_value(Flag, Value),
             {ok, Cas, DecodedValue}
-    after ?TIMEOUT -> {error, timeout}
     end,
     {reply, Reply, State};
 handle_call({remove, Key, N}, _From,
