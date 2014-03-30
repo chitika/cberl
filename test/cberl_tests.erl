@@ -8,7 +8,8 @@ cberl_test_() ->
        fun test_replace_add/1,
        fun test_get_and_touch/1,
        fun test_append_prepend/1,
-       fun test_remove/1]}].
+       fun test_remove/1,
+       fun test_lock/1]}].
 
 %%%===================================================================
 %%% Setup / Teardown
@@ -82,3 +83,15 @@ test_remove(_) ->
     ok = cberl:set(?POOLNAME, Key, 0, Value),
     ok = cberl:remove(?POOLNAME, Key),
     [?_assertEqual({Key, {error,key_enoent}}, cberl:get(?POOLNAME, Key))].
+
+test_lock(_) ->
+    Key = <<"testkey">>,
+    Value = "testval",
+    Value2 = "testval2",
+    ok = cberl:set(?POOLNAME, Key, 0, Value),
+    {Key, CAS, _Exp} = cberl:get_and_lock(?POOLNAME, Key, 100000),
+    fun () ->
+        [?assertEqual({error,key_eexists}, cberl:set(?POOLNAME, Key, 0, Value2)),
+         ?assertEqual(ok, cberl:unlock(?POOLNAME, Key, CAS)),
+         ?assertEqual(ok, cberl:set(?POOLNAME, Key, 0, Value2))]
+    end.
