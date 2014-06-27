@@ -18,6 +18,8 @@
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
 -export([remove/2]).
+%design doc opertations
+-export([set_design_doc/3, remove_design_doc/2]).
 
 
 %% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "", "")
@@ -352,3 +354,16 @@ view_error(<<"not_found">>) -> not_found;
 view_error(<<"bad_request">>) -> bad_request;
 view_error(<<"req_timedout">>) -> req_timedout;
 view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figure out all the errors
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DESIGN DOCUMENT MANAGMENT %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+set_design_doc(PoolPid, DocName, DesignDoc) ->
+    Path = string:join(["_design", DocName], "/"),
+    {ok, _} = http(PoolPid, Path, binary_to_list(jiffy:encode(DesignDoc)), "application/json", put, view),
+    ok.
+
+remove_design_doc(PoolPid, DocName) ->
+    Path = string:join(["_design", DocName], "/"),
+    {ok, _} = http(PoolPid, Path, "", "application/json", delete, view),
+    ok.
