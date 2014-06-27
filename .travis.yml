@@ -1,0 +1,13 @@
+language: erlang
+otp_release:
+  - 17.0
+  - R16B03-1
+  - R16B03
+  - R16B02
+  - R16B01
+  - R16B
+before_script:
+  - sudo wget -O /etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1204.list
+  - sudo apt-get update
+  - sudo apt-get install libcouchbase2-libevent libcouchbase-dev --force-yes
+script: ./rebar compile && ./rebar skip_deps=true tests=cberl_transcoder_test eunit 
