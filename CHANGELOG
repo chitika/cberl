@@ -1,3 +1,7 @@
+-- 0.0.5 (2014-06-28)
+Add set, create for design documents.
+Setup Travis-CI integration
+
 -- 0.0.4 (2014-03-24)
 Fix lock and unlock methods, and correct compilation error.
 Update type specifications and preliminary code cleanup.
