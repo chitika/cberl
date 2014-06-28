@@ -9,9 +9,7 @@ cberl_test_() ->
        fun test_get_and_touch/1,
        fun test_append_prepend/1,
        fun test_remove/1,
-       fun test_lock/1,
-       fun test_set_design_doc/1,
-       fun test_remove_design_doc/1
+       fun test_lock/1
       ]}].
 
 
@@ -21,12 +19,6 @@ cberl_test_() ->
 
 setup() ->
     cberl:start_link(?POOLNAME, 3),
-    cberl:set_design_doc(?POOLNAME, "test-design-doc",
-                         {[{<<"views">>,
-                            {[{<<"test-view">>,
-                               {[{<<"map">>, <<"function(doc,meta){}">>}]}
-                              }]}
-                           }]}),
     ok.
 
 clean_up(_) ->
@@ -104,25 +96,4 @@ test_lock(_) ->
         [?assertEqual({error,key_eexists}, cberl:set(?POOLNAME, Key, 0, Value2)),
          ?assertEqual(ok, cberl:unlock(?POOLNAME, Key, CAS)),
          ?assertEqual(ok, cberl:set(?POOLNAME, Key, 0, Value2))]
-    end.
-
-test_set_design_doc(_) ->
-    DocName = "test-set-design-doc",
-    ViewName = "test-view",
-    DesignDoc = {[{<<"views">>,
-                   {[{list_to_binary(ViewName),
-                      {[{<<"map">>, <<"function(doc,meta){}">>}]}
-                     }]}
-                  }]},
-    fun () ->
-        [?assertEqual(ok, cberl:set_design_doc(?POOLNAME, DocName, DesignDoc)),
-         ?assertMatch({ok, _}, cberl:view(?POOLNAME, DocName, ViewName, []))]
-    end.
-
-test_remove_design_doc(_) ->
-    DocName = "test-design-doc",
-    ViewName = "test-view",
-    fun () ->
-        [?assertEqual(ok, cberl:remove_design_doc(?POOLNAME, DocName)),
-         ?assertMatch({error, _}, cberl:view(?POOLNAME, DocName, ViewName, []))]
     end.
