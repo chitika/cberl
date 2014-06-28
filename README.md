@@ -1,7 +1,7 @@
 CBERL
 ====
 
-[![Build Status](https://travis-ci.org/wcummings/cberl.svg?branch=master)](https://travis-ci.org/wcummings/cberl)
+[![Build Status](https://travis-ci.org/chitika/cberl.svg?branch=master)](https://travis-ci.org/chitika/cberl)
 
 NIF based Erlang bindings for couchbase based on libcouchbase. 
 CBERL is at early stage of development, it only supports very basic functionality. Please submit bugs and patches if you find any.
