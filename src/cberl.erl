@@ -17,7 +17,7 @@
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
--export([remove/2]).
+-export([remove/2, flush/2]).
 %design doc opertations
 -export([set_design_doc/3, remove_design_doc/2]).
 
@@ -231,6 +231,28 @@ arithmetic(PoolPid, Key, OffSet, Exp, Create, Initial) ->
 -spec remove(pid(), key()) -> ok | {error, _}.
 remove(PoolPid, Key) ->
     execute(PoolPid, {remove, Key, 0}).
+
+%% @doc flush all documents from the bucket
+%% Instance libcouchbase Instance to use
+%% BucketName name of the bucket to flush
+-spec flush(pid(), string()) -> ok | {error, _}.
+flush(PoolPid, BucketName) ->
+    FlushMarker = <<"__flush_marker_document__">>,
+    set(PoolPid, FlushMarker, 0, ""),
+    Path = string:join(["pools/default/buckets", BucketName, "controller/doFlush"], "/"),
+    Result = http(PoolPid, Path, "", "application/json", post, management),
+    handle_flush_result(PoolPid, FlushMarker, Result).
+
+handle_flush_result(_, _, {ok, 200, _}) -> ok;
+handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
+    case get(PoolPid, FlushMarker) of
+        {_, {error, key_enoent}} -> ok;
+        _ ->
+            erlang:send_after(1000, self(), check_flush_done),
+            receive
+                check_flush_done -> handle_flush_result(PoolPid, FlushMarker, Result)
+            end
+    end.
 
 %% @doc execute a command with the REST API
 %% PoolPid pid of connection pool

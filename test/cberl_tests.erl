@@ -9,7 +9,8 @@ cberl_test_() ->
        fun test_get_and_touch/1,
        fun test_append_prepend/1,
        fun test_remove/1,
-       fun test_lock/1
+       fun test_lock/1,
+       fun test_flush/1
       ]}].
 
 
@@ -97,3 +98,13 @@ test_lock(_) ->
          ?assertEqual(ok, cberl:unlock(?POOLNAME, Key, CAS)),
          ?assertEqual(ok, cberl:set(?POOLNAME, Key, 0, Value2))]
     end.
+
+test_flush(_) ->
+    Key = <<"testkey">>,
+    Value = "testval",
+    ok = cberl:set(?POOLNAME, Key, 0, Value),
+    fun() ->
+        [?assertMatch(ok, cberl:flush(?POOLNAME, "default")),
+         ?assertMatch({Key, {error, key_enoent}}, cberl:get(?POOLNAME, Key))]
+    end.
+
