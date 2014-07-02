@@ -111,12 +111,13 @@ void http_callback(lcb_http_request_t request,
                    const lcb_http_resp_t *resp)
 {
     (void)instance;
-    struct libcouchbase_callback *cb = (struct libcouchbase_callback*)cookie;
-    cb = (struct libcouchbase_callback *)cookie;
-    cb->error = error;
+    struct libcouchbase_callback_http *cbh;
+    cbh = (struct libcouchbase_callback_http *)cookie;
+    cbh->ret.error = error;
+    cbh->status = resp->v.v0.status;
     if(error == LCB_SUCCESS) {
-        cb->data = malloc(resp->v.v0.nbytes);
-        cb->size = resp->v.v0.nbytes;
-        memcpy(cb->data, resp->v.v0.bytes, resp->v.v0.nbytes);
+        cbh->ret.data = malloc(resp->v.v0.nbytes);
+        cbh->ret.size = resp->v.v0.nbytes;
+        memcpy(cbh->ret.data, resp->v.v0.bytes, resp->v.v0.nbytes);
     }
 }
