@@ -11,6 +11,11 @@ struct libcouchbase_callback {
     lcb_cas_t cas;
 };
 
+struct libcouchbase_callback_http {
+    lcb_http_status_t status;
+    struct libcouchbase_callback ret;
+};
+
 struct libcouchbase_callback_m {
     int currKey;
     struct libcouchbase_callback** ret;

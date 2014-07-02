@@ -300,7 +300,7 @@ http_method(delete) -> 3.
 query_args(Args) when is_list(Args) ->
     string:join([query_arg(A) || A <- Args], "&").
 
-decode_query_resp({ok, Resp}) ->
+decode_query_resp({ok, _, Resp}) ->
     case jiffy:decode(Resp) of
         {[{<<"total_rows">>, TotalRows}, {<<"rows">>, Rows}]} ->
             {ok, {TotalRows, lists:map(fun ({Row}) -> Row end, Rows)}};
@@ -360,10 +360,10 @@ view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 set_design_doc(PoolPid, DocName, DesignDoc) ->
     Path = string:join(["_design", DocName], "/"),
-    {ok, _} = http(PoolPid, Path, binary_to_list(jiffy:encode(DesignDoc)), "application/json", put, view),
+    {ok, _, _} = http(PoolPid, Path, binary_to_list(jiffy:encode(DesignDoc)), "application/json", put, view),
     ok.
 
 remove_design_doc(PoolPid, DocName) ->
     Path = string:join(["_design", DocName], "/"),
-    {ok, _} = http(PoolPid, Path, "", "application/json", delete, view),
+    {ok, _, _} = http(PoolPid, Path, "", "application/json", delete, view),
     ok.
