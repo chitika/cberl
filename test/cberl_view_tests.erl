@@ -5,8 +5,8 @@
 cberl_view_test_() ->
     [{foreach, fun setup/0, fun clean_up/1,
       [fun test_set_design_doc/1,
-       fun test_remove_design_doc/1
-      ]}].
+       fun test_remove_design_doc/1,
+       fun test_query_view/1]}].
 
 
 %%%===================================================================
@@ -29,6 +29,10 @@ clean_up(_) ->
 %%%===================================================================
 %%% Tests
 %%%===================================================================
+test_query_view(_) ->
+    DocName = "test-set-design-doc",
+    ViewName = "test-view",
+    [?_assertMatch({ok, {0, []}}, cberl:view(?POOLNAME, DocName, ViewName, []))].
 
 test_set_design_doc(_) ->
     DocName = "test-set-design-doc",
