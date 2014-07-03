@@ -49,7 +49,9 @@ init([{host, Host}, {username, Username}, {password, Password},
     {ok, Handle} = cberl_nif:new(),
     ok = cberl_nif:control(Handle, op(connect), [Host, Username, Password, BucketName]),
     receive
-        ok -> {ok, #instance{handle = Handle, transcoder = Transcoder}};
+        ok -> {ok, #instance{handle = Handle,
+                             transcoder = Transcoder,
+                             bucketname = canonical_bucket_name(BucketName)}};
         {error, Error} -> {stop, Error}
     end.
 
@@ -127,6 +129,8 @@ handle_call({http, Path, Body, ContentType, Method, Chunked}, _From,
     receive
         Reply -> {reply, Reply, State}
     end;
+handle_call(bucketname, _From, State = #instance{bucketname = BucketName}) ->
+    {reply, {ok, BucketName}, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -203,3 +207,10 @@ op(mtouch) -> ?'CMD_MTOUCH';
 op(arithmetic) -> ?'CMD_ARITHMETIC';
 op(remove) -> ?'CMD_REMOVE';
 op(http) -> ?'CMD_HTTP'.
+
+-spec canonical_bucket_name(string()) -> string().
+canonical_bucket_name(Name) ->
+    case Name of
+        [] -> "default";
+        BucketName -> BucketName
+    end.

@@ -10,8 +10,8 @@ cberl_test_() ->
        fun test_append_prepend/1,
        fun test_remove/1,
        fun test_lock/1,
-       fun test_flush/1
-      ]}].
+       fun test_flush/1,
+       fun test_flush_1/1]}].
 
 
 %%%===================================================================
@@ -105,6 +105,15 @@ test_flush(_) ->
     ok = cberl:set(?POOLNAME, Key, 0, Value),
     fun() ->
         [?assertMatch(ok, cberl:flush(?POOLNAME, "default")),
+         ?assertMatch({Key, {error, key_enoent}}, cberl:get(?POOLNAME, Key))]
+    end.
+
+test_flush_1(_) ->
+    Key = <<"testkey">>,
+    Value = "testval",
+    ok = cberl:set(?POOLNAME, Key, 0, Value),
+    fun() ->
+        [?assertMatch(ok, cberl:flush(?POOLNAME)),
          ?assertMatch({Key, {error, key_enoent}}, cberl:get(?POOLNAME, Key))]
     end.
 
