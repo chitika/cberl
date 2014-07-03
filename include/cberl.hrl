@@ -15,7 +15,8 @@
 
 -type handle() :: binary().
 
--record(instance, {handle :: handle(), 
+-record(instance, {handle :: handle(),
+                   bucketname :: string(),
                    transcoder :: module()}).
 
 -type key() :: string().

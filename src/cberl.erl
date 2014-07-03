@@ -17,7 +17,7 @@
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
 %remove
--export([remove/2, flush/2]).
+-export([remove/2, flush/1, flush/2]).
 %design doc opertations
 -export([set_design_doc/3, remove_design_doc/2]).
 
@@ -242,6 +242,13 @@ flush(PoolPid, BucketName) ->
     Path = string:join(["pools/default/buckets", BucketName, "controller/doFlush"], "/"),
     Result = http(PoolPid, Path, "", "application/json", post, management),
     handle_flush_result(PoolPid, FlushMarker, Result).
+
+%% @doc flush all documents from the current bucket
+%% Instance libcouchbase Instance to use
+-spec flush(pid()) -> ok | {error, _}.
+flush(PoolPid) ->
+    {ok, BucketName} = execute(PoolPid, bucketname),
+    flush(PoolPid, BucketName).
 
 handle_flush_result(_, _, {ok, 200, _}) -> ok;
 handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
