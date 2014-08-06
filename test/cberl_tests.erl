@@ -9,6 +9,7 @@ cberl_test_() ->
        fun test_get_and_touch/1,
        fun test_append_prepend/1,
        fun test_remove/1,
+       fun test_touch/1,
        fun test_lock/1,
        fun test_flush/1,
        fun test_flush_1/1]}].
@@ -77,6 +78,14 @@ test_get_and_touch(_) ->
     Value = "testval",
     ok = cberl:set(?POOLNAME, Key, 0, Value),
     cberl:get_and_touch(?POOLNAME, Key, 1),
+    timer:sleep(5000),
+    [?_assertEqual({Key, {error,key_enoent}}, cberl:get(?POOLNAME, Key))].
+
+test_touch(_) ->
+    Key = <<"testkey">>,
+    Value = "testval",
+    ok = cberl:set(?POOLNAME, Key, 0, Value),
+    {ok, _} = cberl:touch(?POOLNAME, Key, 1),
     timer:sleep(5000),
     [?_assertEqual({Key, {error,key_enoent}}, cberl:get(?POOLNAME, Key))].
 
