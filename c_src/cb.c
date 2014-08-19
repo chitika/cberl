@@ -436,7 +436,7 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
     i = 0; 
     for(; i < args->numkeys; i++) {
         enif_alloc_binary(cb.ret[i]->nkey, &key_binary);
-        memcpy(key_binary.data, cb.ret[i]->data, cb.ret[i]->size);
+        memcpy(key_binary.data, cb.ret[i]->key, cb.ret[i]->nkey);
         ERL_NIF_TERM key = enif_make_binary(env, &key_binary);
         if (cb.ret[i]->error == LCB_SUCCESS) {
             results[i] = enif_make_tuple2(env,
