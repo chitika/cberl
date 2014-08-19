@@ -337,7 +337,8 @@ decode_query_resp({ok, _, Resp}) ->
             {ok, {lists:map(fun ({Row}) -> Row end, Rows)}};
         {[{<<"error">>,Error}, {<<"reason">>, Reason}]} ->
             {error, {view_error(Error), Reason}}
-    end.
+    end;
+decode_query_resp({error, _} = E) -> E.
 
 query_arg({descending, true}) -> "descending=true";
 query_arg({descending, false}) -> "descending=false";
