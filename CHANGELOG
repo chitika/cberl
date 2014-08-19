@@ -1,3 +1,6 @@
+-- 1.0.0 (2014-08-19)
+Fix bug with cberl:touch causing a segfault.
+
 -- 0.0.7 (2014-08-19)
 Match errors in decode_query_resp and pass up.
 
