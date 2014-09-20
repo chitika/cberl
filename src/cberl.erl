@@ -158,7 +158,10 @@ get_and_touch(PoolPid, Key, Exp) ->
 
 -spec get(pid(), key()) -> {ok, integer(), value()} | {error, _}.
 get(PoolPid, Key) ->
-    hd(mget(PoolPid, [Key], 0)).
+    case mget(PoolPid, [Key], 0) of
+        {error, _} = E -> E;
+        Result -> hd(Result)
+    end.
 
 mget(PoolPid, Keys) ->
     mget(PoolPid, Keys, 0).
