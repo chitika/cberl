@@ -81,37 +81,37 @@ handle_call({mtouch, Keys, ExpTimesE}, _From, State) ->
 handle_call({unlock, Key, Cas}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, unlock(Key, Cas, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({store, Op, Key, Value, TranscoderOpts, Exp, Cas}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, store(Op, Key, Value, TranscoderOpts, Exp, Cas, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({mget, Keys, Exp, Lock}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, mget(Keys, Exp, Lock, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({arithmetic, Key, OffSet, Exp, Create, Initial}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, arithmetic(Key, OffSet, Exp, Create, Initial, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({remove, Key, N}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, remove(Key, N, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({http, Path, Body, ContentType, Method, Chunked}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, http(Path, Body, ContentType, Method, Chunked, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call(bucketname, _From, State = #instance{bucketname = BucketName}) ->
@@ -182,9 +182,7 @@ connect(#instance{connected = false, handle = Handle, opts = Opts}) ->
     ok = cberl_nif:control(Handle, op(connect), Opts),
     receive
         ok -> ok;
-        {error, Error} ->
-            io:format("~p~n", [Error]),
-            error
+        {error, _} = E -> E
     end.
 
 mtouch(Keys, ExpTimesE, #instance{handle = Handle}) ->
