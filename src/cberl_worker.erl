@@ -54,7 +54,7 @@ init([{host, Host}, {username, Username}, {password, Password},
                       connected = false},
     State2 = case connect(State) of
         ok -> State#instance{connected = true};
-        error -> State#instance{connected = false}
+        {error, _} -> State#instance{connected = false}
     end,
     {ok, State2}.
 
@@ -75,7 +75,7 @@ init([{host, Host}, {username, Username}, {password, Password},
 handle_call({mtouch, Keys, ExpTimesE}, _From, State) ->
     {Connected, Reply} = case connect(State) of
         ok -> {true, mtouch(Keys, ExpTimesE, State)};
-        error -> {false, {error, unavailable}}
+        {error, _} -> {false, {error, unavailable}}
     end,
     {reply, Reply, State#instance{connected = Connected}};
 handle_call({unlock, Key, Cas}, _From, State) ->
