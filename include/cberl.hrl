@@ -17,7 +17,9 @@
 
 -record(instance, {handle :: handle(),
                    bucketname :: string(),
-                   transcoder :: module()}).
+                   transcoder :: module(),
+                   connected :: true | false,
+                   opts :: list()}).
 
 -type key() :: string().
 -type value() :: string() | list() | integer() | binary().
