@@ -6,6 +6,7 @@ cberl_test_() ->
     [{foreach, fun setup/0, fun clean_up/1,
       [fun test_set_and_get/1,
        fun test_replace_add/1,
+       fun test_multi_get/1,
        fun test_get_and_touch/1,
        fun test_append_prepend/1,
        fun test_remove/1,
@@ -46,6 +47,16 @@ test_set_and_get(_) ->
      ?_assertMatch({Key, _, Value}, Get2),
      ?_assertMatch({Key, _, Value}, Get3)
     ].
+
+test_multi_get(_) ->
+    Value = "testval",
+    Keys = [<<"testkeymget1">>,
+            <<"testkeymget2">>,
+            <<"testkeymget3">>,
+            <<"testkeymget4">>,
+            <<"testkeymget5">>],
+    lists:map(fun(Key) -> ok = cberl:set(?POOLNAME, Key, 0, Value) end, Keys),
+    [?_assertMatch({<<"testkeymget1">>,_, "testval"}, lists:nth(1, cberl:mget(?POOLNAME, Keys)))].
 
 test_replace_add(_) ->
     Key = <<"testkey">>,
