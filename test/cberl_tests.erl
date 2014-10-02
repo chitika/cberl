@@ -50,13 +50,9 @@ test_set_and_get(_) ->
 
 test_multi_get(_) ->
     Value = "testval",
-    Keys = [<<"testkeymget1">>,
-            <<"testkeymget2">>,
-            <<"testkeymget3">>,
-            <<"testkeymget4">>,
-            <<"testkeymget5">>],
+    Keys = lists:map(fun(N) -> list_to_binary(integer_to_list(N)) end, lists:seq(1, 1000)),
     lists:map(fun(Key) -> ok = cberl:set(?POOLNAME, Key, 0, Value) end, Keys),
-    [?_assertMatch({<<"testkeymget1">>,_, "testval"}, lists:nth(1, cberl:mget(?POOLNAME, Keys)))].
+    [?_assertMatch({<<"1">>,_, "testval"}, lists:nth(1, cberl:mget(?POOLNAME, Keys)))].
 
 test_replace_add(_) ->
     Key = <<"testkey">>,
