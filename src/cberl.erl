@@ -1,8 +1,9 @@
 %%% @author Ali Yakamercan <aliyakamercan@gmail.com>
 %%% @copyright 2012-2013 Chitika Inc.
-%%% @version 0.0.2
+%%% @version 0.0.3
 
 -module(cberl).
+-vsn("0.0.3").
 -include("cberl.hrl").
 
 -export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
@@ -285,7 +286,7 @@ view(PoolPid, DocName, ViewName, Args) ->
     Path = string:join(["_design", DocName, "_view", ViewName], "/"),
     Resp = case proplists:get_value(keys, Args) of
         undefined ->  %% FIXME maybe not have to pass in an empty json obj here
-            http(PoolPid, string:join([Path, query_args(Args)], "?"), "{}", "application/json", get, view);
+            http(PoolPid, string:join([Path, query_args(Args)], "?"), "", "application/json", get, view);
         Keys ->
             http(PoolPid, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(jiffy:encode({[{keys, Keys}]})), "application/json", post, view)
     end,
