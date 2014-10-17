@@ -1,6 +1,6 @@
 -module(cberl_tests).
 -include_lib("eunit/include/eunit.hrl").
--define(POOLNAME, testpool).
+-include_lib("couchbase_connection.hrl").
 
 cberl_test_() ->
     [{foreach, fun setup/0, fun clean_up/1,
@@ -21,7 +21,10 @@ cberl_test_() ->
 %%%===================================================================
 
 setup() ->
-    cberl:start_link(?POOLNAME, 3),
+    cberl:start_link(?POOLNAME, 3,
+                     ?COUCHBASE_HOST,
+                     ?COUCHBASE_USER,
+                     ?COUCHBASE_PASSWORD),
     ok.
 
 clean_up(_) ->
