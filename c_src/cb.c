@@ -575,23 +575,24 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
 void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     http_args_t* args = (http_args_t*)enif_alloc(sizeof(http_args_t));
+    ErlNifBinary path;
+    ErlNifBinary body;
+    ErlNifBinary content_type;
 
-    unsigned int len;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &path)) goto error1;
+    args->path = (char *)enif_alloc((path.size + 1) * sizeof(char));
+    memset(args->path, 0, path.size + 1);
+    memcpy(args->path, path.data, path.size);
 
-    if (!enif_get_list_length(env, argv[0], &len)) goto error0;
-    len += 1;
-    args->path = (char *)enif_alloc(len * sizeof(char));
-    if (!enif_get_string(env, argv[0], args->path, len, ERL_NIF_LATIN1)) goto error1;
+    if (!enif_inspect_iolist_as_binary(env, argv[1], &body)) goto error2;
+    args->body = (char *)enif_alloc((body.size + 1) * sizeof(char));
+    memset(args->body, 0, body.size + 1);
+    memcpy(args->body, body.data, body.size);
 
-    if (!enif_get_list_length(env, argv[1], &len)) goto error1;
-    len += 1;
-    args->body = (char *)enif_alloc(len * sizeof(char));
-    if (!enif_get_string(env, argv[1], args->body, len, ERL_NIF_LATIN1)) goto error2;
-
-    if (!enif_get_list_length(env, argv[2], &len)) goto error2;
-    len += 1;
-    args->content_type = (char *)enif_alloc(len * sizeof(char));
-    if (!enif_get_string(env, argv[2], args->content_type, len, ERL_NIF_LATIN1)) goto error3;
+    if (!enif_inspect_iolist_as_binary(env, argv[2], &content_type)) goto error3;
+    args->content_type = (char *)enif_alloc((content_type.size + 1) * sizeof(char));
+    memset(args->content_type, 0, content_type.size + 1);
+    memcpy(args->content_type, content_type.data, content_type.size);
 
     if (!enif_get_int(env, argv[3], (int*)&args->method)) goto error3;
     if (!enif_get_int(env, argv[4], (int*)&args->type)) goto error3;
