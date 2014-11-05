@@ -18,6 +18,11 @@ static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info)
     return 0;
 }
 
+static int upgrade(ErlNifEnv* env, void** priv, void** old_priv_data, ERL_NIF_TERM load_info)
+{
+    return load(env, priv, load_info);
+}
+
 NIF(cberl_nif_new)
 {
     handle_t* handle = enif_alloc_resource(cberl_handle, sizeof(handle_t));
@@ -143,4 +148,4 @@ static ErlNifFunc nif_funcs[] = {
     {"destroy", 1, cberl_nif_destroy}
 };
 
-ERL_NIF_INIT(cberl_nif, nif_funcs, load, NULL, NULL, NULL);
+ERL_NIF_INIT(cberl_nif, nif_funcs, load, NULL, upgrade, NULL);
