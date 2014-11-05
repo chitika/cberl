@@ -579,17 +579,17 @@ void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ErlNifBinary body;
     ErlNifBinary content_type;
 
-    if (!enif_inspect_iolist_as_binary(env, argv[0], &path)) goto error1;
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &path)) goto error0;
     args->path = (char *)enif_alloc((path.size + 1) * sizeof(char));
     memset(args->path, 0, path.size + 1);
     memcpy(args->path, path.data, path.size);
 
-    if (!enif_inspect_iolist_as_binary(env, argv[1], &body)) goto error2;
+    if (!enif_inspect_iolist_as_binary(env, argv[1], &body)) goto error1;
     args->body = (char *)enif_alloc((body.size + 1) * sizeof(char));
     memset(args->body, 0, body.size + 1);
     memcpy(args->body, body.data, body.size);
 
-    if (!enif_inspect_iolist_as_binary(env, argv[2], &content_type)) goto error3;
+    if (!enif_inspect_iolist_as_binary(env, argv[2], &content_type)) goto error2;
     args->content_type = (char *)enif_alloc((content_type.size + 1) * sizeof(char));
     memset(args->content_type, 0, content_type.size + 1);
     memcpy(args->content_type, content_type.data, content_type.size);
@@ -602,10 +602,11 @@ void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     error3:
     enif_free(args->content_type);
     error2:
-    enif_free(args->path);
-    error1:
     enif_free(args->body);
+    error1:
+    enif_free(args->path);
     error0:
+    enif_free(args);
     return NULL;
 }
 
