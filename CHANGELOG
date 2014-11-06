@@ -1,5 +1,8 @@
+-- 1.0.2 (2014-11-06)
+Refine connection logic, support IOlists as keys.
+
 -- 1.0.1 (2014-08-21)
-	Centralize test host functionality into one file.
+Centralize test host functionality into one file.
 
 -- 1.0.0 (2014-08-19)
 Fix bug with cberl:touch causing a segfault.
