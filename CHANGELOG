@@ -1,3 +1,6 @@
+-- 1.0.3 (2014-11-19)
+Support detailed libcouchbase errors, when possible.
+
 -- 1.0.2 (2014-11-06)
 Refine connection logic, support IOlists as keys.
 
