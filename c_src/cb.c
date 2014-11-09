@@ -101,6 +101,14 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
         return return_lcb_error(env, err);
     }
 
+    #ifdef LCB_CNTL_DETAILED_ERRCODES
+    int val = 1;
+    err = lcb_cntl(handle->instance, LCB_CNTL_SET, LCB_CNTL_DETAILED_ERRCODES, &val);
+    if(err != LCB_SUCCESS) {
+        return return_lcb_error(env, err);
+    }
+    #endif
+
     return enif_make_atom(env, "ok");
 }
 
@@ -699,7 +707,7 @@ ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value) {
         case LCB_CLIENT_ENOMEM:
             return enif_make_tuple2(env, A_ERROR(env), enif_make_atom(env, "client_enomem"));
         default:
-            return enif_make_tuple2(env, A_ERROR(env), enif_make_atom(env, "unknown_error"));            
+            return enif_make_tuple2(env, A_ERROR(env), enif_make_tuple2(env, enif_make_atom(env, "unknown_error"), enif_make_int(env, value)));            
     }
 }
 
