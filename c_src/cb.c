@@ -699,7 +699,7 @@ ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value) {
         case LCB_CLIENT_ENOMEM:
             return enif_make_tuple2(env, A_ERROR(env), enif_make_atom(env, "client_enomem"));
         default:
-            return enif_make_tuple2(env, A_ERROR(env), enif_make_atom(env, "unknown_error"));            
+            return enif_make_tuple2(env, A_ERROR(env), enif_make_tuple2(env, enif_make_atom(env, "unknown_error"), enif_make_int(env, value)));            
     }
 }
 
