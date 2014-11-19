@@ -512,6 +512,7 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
     arithmetic.v.v0.initial = args->initial;
     arithmetic.v.v0.create = args->create;
     arithmetic.v.v0.delta = args->delta;
+    arithmetic.v.v0.exptime = args->exp;
     ret = lcb_arithmetic(handle->instance, &cb, 1, commands);
  
     free(args->key);
