@@ -288,7 +288,7 @@ view(PoolPid, DocName, ViewName, Args) ->
         undefined ->  %% FIXME maybe not have to pass in an empty json obj here
             http(PoolPid, string:join([Path, query_args(Args)], "?"), "", "application/json", get, view);
         Keys ->
-            http(PoolPid, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(jiffy:encode({[{keys, Keys}]})), "application/json", post, view)
+            http(PoolPid, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(iolist_to_binary(jiffy:encode({[{keys, Keys}]}))), "application/json", post, view)
     end,
     decode_query_resp(Resp).
 
@@ -362,7 +362,7 @@ query_arg({group_level, V}) when is_integer(V) -> string:join(["group_level", in
 query_arg({inclusive_end, true}) -> "inclusive_end=true";
 query_arg({inclusive_end, false}) -> "inclusive_end=false";
 
-query_arg({key, V}) -> string:join(["key", binary_to_list(jiffy:encode(V))], "=");
+query_arg({key, V}) -> string:join(["key", binary_to_list(iolist_to_binary(jiffy:encode(V)))], "=");
 
 query_arg({keys, V}) when is_list(V) -> string:join(["keys", jiffy:encode(V)], "=");
 
@@ -394,7 +394,7 @@ view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 set_design_doc(PoolPid, DocName, DesignDoc) ->
     Path = string:join(["_design", DocName], "/"),
-    {ok, _, _} = http(PoolPid, Path, binary_to_list(jiffy:encode(DesignDoc)), "application/json", put, view),
+    {ok, _, _} = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
     ok.
 
 remove_design_doc(PoolPid, DocName) ->
