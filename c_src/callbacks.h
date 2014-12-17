@@ -21,10 +21,6 @@ struct libcouchbase_callback_m {
     struct libcouchbase_callback** ret;
 };
 
-void error_callback(lcb_t instance,
-                    lcb_error_t error,
-                    const char *errinfo);
-
 void get_callback(lcb_t instance,
                   const void *cookie,
                   lcb_error_t error,
