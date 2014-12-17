@@ -11,7 +11,7 @@
 %store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5, store/7]).
 %update operations
--export([append/4, prepend/4, touch/3, mtouch/3]).
+-export([append/3, prepend/3, touch/3, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 -export([arithmetic/6]).
 %retrieval operations
@@ -99,13 +99,13 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 %%% UPDATE OPERATIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec append(pid(), integer(), key(), value()) -> ok | {error, _}.
-append(PoolPid, Cas, Key, Value) ->
-    store(PoolPid, append, Key, Value, str, 0, Cas).
+-spec append(pid(), key(), value()) -> ok | {error, _}.
+append(PoolPid, Key, Value) ->
+    store(PoolPid, append, Key, Value, str, 0, 0).
 
--spec prepend(pid(), integer(), key(), value()) -> ok | {error, _}.
-prepend(PoolPid, Cas, Key, Value) ->
-    store(PoolPid, prepend, Key, Value, str, 0, Cas).
+-spec prepend(pid(), key(), value()) -> ok | {error, _}.
+prepend(PoolPid, Key, Value) ->
+    store(PoolPid, prepend, Key, Value, str, 0, 0).
 
 %% @doc Touch (set expiration time) on the given key
 %% PoolPid libcouchbase instance to use
