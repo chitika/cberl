@@ -1,3 +1,6 @@
+-- 1.0.4 (2014-12-17)
+Fix potential crash with cberl:view.
+
 -- 1.0.3 (2014-11-19)
 Support detailed libcouchbase errors, when possible.
 
