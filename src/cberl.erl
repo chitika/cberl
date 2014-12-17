@@ -101,11 +101,11 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 
 -spec append(pid(), key(), value()) -> ok | {error, _}.
 append(PoolPid, Key, Value) ->
-    store(PoolPid, append, Key, Value, str, 0, 0).
+    store(PoolPid, append, Key, Value, none, 0, 0).
 
 -spec prepend(pid(), key(), value()) -> ok | {error, _}.
 prepend(PoolPid, Key, Value) ->
-    store(PoolPid, prepend, Key, Value, str, 0, 0).
+    store(PoolPid, prepend, Key, Value, none, 0, 0).
 
 %% @doc Touch (set expiration time) on the given key
 %% PoolPid libcouchbase instance to use
