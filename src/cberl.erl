@@ -66,32 +66,32 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) -
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @equiv add(PoolPid, Key, Exp, Value, standard)
--spec add(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec add(poolboy:pool(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value) ->
     add(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0)
--spec add(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec add(poolboy:pool(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv replace(PoolPid, Key, Exp, Value, standard)
--spec replace(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec replace(poolboy:pool(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value) ->
     replace(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, replace, "", Key, Value, Exp)
--spec replace(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec replace(poolboy:pool(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, replace, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv set(PoolPid, Key, Exp, Value, standard)
--spec set(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec set(poolboy:pool(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value) ->
     set(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, set, "", Key, Value, Exp)
--spec set(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec set(poolboy:pool(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, set, Key, Value, TranscoderOpts, Exp, 0).
 
@@ -99,24 +99,24 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 %%% UPDATE OPERATIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec append(pid(), key(), value()) -> ok | {error, _}.
+-spec append(poolboy:pool(), key(), value()) -> {ok,integer()} | {error, _}.
 append(PoolPid, Key, Value) ->
-    store(PoolPid, append, Key, Value, none, 0, 0).
+    store(PoolPid, append, Key, Value, str, 0, 0).
 
--spec prepend(pid(), key(), value()) -> ok | {error, _}.
+-spec prepend(poolboy:pool(), key(), value()) -> {ok,integer()} | {error, _}.
 prepend(PoolPid, Key, Value) ->
-    store(PoolPid, prepend, Key, Value, none, 0, 0).
+    store(PoolPid, prepend, Key, Value, str, 0, 0).
 
 %% @doc Touch (set expiration time) on the given key
 %% PoolPid libcouchbase instance to use
 %% Key key to touch
 %% ExpTime a new expiration time for the item
--spec touch(pid(), key(), integer()) -> {ok, any()}.
+-spec touch(poolboy:pool(), key(), integer()) -> {ok, any()}.
 touch(PoolPid, Key, ExpTime) ->
     {ok, Return} = mtouch(PoolPid, [Key], [ExpTime]),
     {ok, hd(Return)}.
 
--spec mtouch(pid(), [key()], integer() | [integer()])
+-spec mtouch(poolboy:pool(), [key()], integer() | [integer()])
 	    -> {ok, any()} | {error, any()}.
 mtouch(PoolPid, Keys, ExpTime) when is_integer(ExpTime) ->
     mtouch(PoolPid, Keys, [ExpTime]);
@@ -151,11 +151,11 @@ decr(PoolPid, Key, OffSet, Default, Exp) ->
 %%% RETRIEVAL METHODS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec get_and_touch(pid(), key(), integer()) -> [{ok, integer(), value()} | {error, _}].
+-spec get_and_touch(poolboy:pool(), key(), integer()) -> [{ok, integer(), value()} | {error, _}].
 get_and_touch(PoolPid, Key, Exp) ->
     mget(PoolPid, [Key], Exp).
 
--spec get(pid(), key()) -> {ok, integer(), value()} | {error, _}.
+-spec get(poolboy:pool(), key()) -> {ok, integer(), value()} | {error, _}.
 get(PoolPid, Key) ->
     case mget(PoolPid, [Key], 0) of
         {error, _} = E -> E;
@@ -165,11 +165,11 @@ get(PoolPid, Key) ->
 mget(PoolPid, Keys) ->
     mget(PoolPid, Keys, 0).
 
--spec get_and_lock(pid(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
+-spec get_and_lock(poolboy:pool(), key(), integer()) -> {ok, integer(), value()} | {error, _}.
 get_and_lock(PoolPid, Key, Exp) ->
     hd(getl(PoolPid, Key, Exp)).
 
--spec unlock(pid(), key(), integer()) -> ok | {error, _}.
+-spec unlock(poolboy:pool(), key(), integer()) -> ok | {error, _}.
 unlock(PoolPid, Key, Cas) ->
     execute(PoolPid, {unlock, Key, Cas}).
 
@@ -190,8 +190,8 @@ unlock(PoolPid, Key, Cas) ->
 %%     (i.e. 24 * 3600 * 30) then it's an absolute timestamp.
 %%     pass 0 for infinity
 %% CAS
--spec store(pid(), operation_type(), key(), value(), atom(),
-            integer(), integer()) -> ok | {error, _}.
+-spec store(poolboy:pool(), operation_type(), key(), value(), atom(),
+            integer(), integer()) -> {ok,integer()} | {error, _}.
 store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
     execute(PoolPid, {store, Op, Key, Value,
                        TranscoderOpts, Exp, Cas}).
@@ -202,7 +202,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), [key()], integer()) -> list().
+-spec mget(poolboy:pool(), [key()], integer()) -> list().
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
 
@@ -211,7 +211,7 @@ mget(PoolPid, Keys, Exp) ->
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(pid(), key(), integer()) -> list().
+-spec getl(poolboy:pool(), key(), integer()) -> list().
 getl(PoolPid, Key, Exp) ->
     execute(PoolPid, {mget, [Key], Exp, 1}).
 
@@ -223,7 +223,7 @@ getl(PoolPid, Key, Exp) ->
 %% Create set to true if you want the object to be created if it
 %%        doesn't exist.
 %% Initial The initial value of the object if we create it
--spec arithmetic(pid(), key(), integer(), integer(), integer(), integer()) ->
+-spec arithmetic(poolboy:pool(), key(), integer(), integer(), integer(), integer()) ->
    ok | {error, _}.
 arithmetic(PoolPid, Key, OffSet, Exp, Create, Initial) ->
     execute(PoolPid, {arithmetic, Key, OffSet, Exp, Create, Initial}).
@@ -231,14 +231,14 @@ arithmetic(PoolPid, Key, OffSet, Exp, Create, Initial) ->
 %% @doc remove the value for given key
 %% Instance libcouchbase instance to use
 %% Key key to  remove
--spec remove(pid(), key()) -> ok | {error, _}.
+-spec remove(poolboy:pool(), key()) -> ok | {error, _}.
 remove(PoolPid, Key) ->
     execute(PoolPid, {remove, Key, 0}).
 
 %% @doc flush all documents from the bucket
 %% Instance libcouchbase Instance to use
 %% BucketName name of the bucket to flush
--spec flush(pid(), string()) -> ok | {error, _}.
+-spec flush(poolboy:pool(), string()) -> ok | {error, _}.
 flush(PoolPid, BucketName) ->
     FlushMarker = <<"__flush_marker_document__">>,
     set(PoolPid, FlushMarker, 0, ""),
@@ -248,7 +248,7 @@ flush(PoolPid, BucketName) ->
 
 %% @doc flush all documents from the current bucket
 %% Instance libcouchbase Instance to use
--spec flush(pid()) -> ok | {error, _}.
+-spec flush(poolboy:pool()) -> ok | {error, _}.
 flush(PoolPid) ->
     {ok, BucketName} = execute(PoolPid, bucketname),
     flush(PoolPid, BucketName).
@@ -271,7 +271,7 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
 %% ContentType HTTP content type
 %% Method HTTP method
 %% Type Couchbase request type
--spec http(pid(), string(), string(), string(), http_method(), http_type())
+-spec http(poolboy:pool(), string(), string(), string(), http_method(), http_type())
 	  -> {ok, binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
