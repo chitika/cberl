@@ -111,7 +111,6 @@ prepend(PoolPid, Key, Value) ->
 %% PoolPid libcouchbase instance to use
 %% Key key to touch
 %% ExpTime a new expiration time for the item
-
 -spec touch(pid(), key(), integer()) -> {ok, any()}.
 touch(PoolPid, Key, ExpTime) ->
     {ok, Return} = mtouch(PoolPid, [Key], [ExpTime]),
@@ -316,6 +315,10 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
 stop(PoolPid) ->
     poolboy:stop(PoolPid).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%    INTERNAL FUNCTIONS     %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 execute(PoolPid, Cmd) ->
     poolboy:transaction(PoolPid, fun(Worker) ->
             gen_server:call(Worker, Cmd)
@@ -392,6 +395,7 @@ view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN DOCUMENT MANAGMENT %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 set_design_doc(PoolPid, DocName, DesignDoc) ->
     Path = string:join(["_design", DocName], "/"),
     {ok, _, _} = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
