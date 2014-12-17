@@ -2,6 +2,7 @@
 -export([encode_value/2, decode_value/2, flag/1]).
 -include("cberl.hrl").
 
+-define('CBE_NONE',     0).
 -define('CBE_JSON',     16#0002).
 -define('CBE_RAW',      16#0004).
 -define('CBE_STR',      16#0008).
@@ -26,16 +27,17 @@ encode_value1(_, Value) ->
     Value.
 
 -spec decode_value(integer(), value()) -> value().
-decode_value(Flag, Value) when ?'CBE_RAW' band Flag == ?'CBE_RAW' -> 
+decode_value(Flag, Value) when ?'CBE_RAW' band Flag == ?'CBE_RAW' ->
     decode_value(Flag bxor ?'CBE_RAW', binary_to_term(Value));
-decode_value(Flag, Value) when ?'CBE_JSON' band Flag == ?'CBE_JSON' -> 
-    decode_value(Flag bxor ?'CBE_JSON', jiffy:decode(Value));                
-decode_value(Flag, Value) when ?'CBE_STR' band Flag == ?'CBE_STR' -> 
+decode_value(Flag, Value) when ?'CBE_JSON' band Flag == ?'CBE_JSON' ->
+    decode_value(Flag bxor ?'CBE_JSON', jiffy:decode(Value));
+decode_value(Flag, Value) when ?'CBE_STR' band Flag == ?'CBE_STR' ->
     decode_value(Flag bxor ?'CBE_STR', binary_to_list(Value));
-decode_value(_, Value) -> 
+decode_value(_, Value) ->
     Value.
 
 -spec flag(encoder() | encoder_list()) -> integer().
+flag(none) -> ?'CBE_NONE';
 flag(standard) -> flag(?STANDARD_FLAG);
 flag(json) -> ?'CBE_JSON';
 flag(raw_binary) -> ?'CBE_RAW';

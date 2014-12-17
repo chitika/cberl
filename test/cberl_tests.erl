@@ -75,9 +75,9 @@ test_replace_add(_) ->
 test_append_prepend(_) ->
     Key = <<"testkey">>,
     ok = cberl:set(?POOLNAME, Key, 0, "base", str),
-    ok = cberl:append(?POOLNAME, 0, Key, "tail"),
+    ok = cberl:append(?POOLNAME, Key, "tail"),
     Get1 = cberl:get(?POOLNAME, Key),
-    ok = cberl:prepend(?POOLNAME, 0, Key, "head"),
+    ok = cberl:prepend(?POOLNAME, Key, "head"),
     Get2 = cberl:get(?POOLNAME, Key),
     [?_assertMatch({Key, _, "basetail"}, Get1),
      ?_assertMatch({Key, _, "headbasetail"}, Get2)
