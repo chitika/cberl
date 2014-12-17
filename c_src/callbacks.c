@@ -4,14 +4,6 @@
 #include "erl_nif.h"
 #include "callbacks.h"
 
-void error_callback(lcb_t instance,
-                    lcb_error_t error,
-                    const char *errinfo)
-{
-    (void)instance;
-    // do nothing
-}
-
 void get_callback(lcb_t instance,
                   const void *cookie,
                   lcb_error_t error,
@@ -29,7 +21,7 @@ void get_callback(lcb_t instance,
     if (error == LCB_SUCCESS) {
         cbm->ret[cbm->currKey]->data = malloc(item->v.v0.nbytes);
         memcpy(cbm->ret[cbm->currKey]->data, item->v.v0.bytes, item->v.v0.nbytes);
-        cbm->ret[cbm->currKey]->size = item->v.v0.nbytes;        
+        cbm->ret[cbm->currKey]->size = item->v.v0.nbytes;
     }
     cbm->currKey += 1;
 }
@@ -48,7 +40,7 @@ void arithmetic_callback(lcb_t instance,
         cb->data = malloc(20*sizeof(char));
         memset(cb->data, 0, 20);
         sprintf(cb->data, "%llu", resp->v.v0.value);
-        cb->size = strlen(cb->data); 
+        cb->size = strlen(cb->data);
     }
 }
 
@@ -85,7 +77,7 @@ void store_callback(lcb_t instance,
                     lcb_error_t error,
                     const lcb_store_resp_t *item)
 {
-  
+
     (void)instance; (void)operation;
     struct libcouchbase_callback *cb;
     cb = (struct libcouchbase_callback *)cookie;

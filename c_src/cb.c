@@ -21,7 +21,7 @@ void *cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if (!enif_get_list_length(env, argv[2], &arg_length)) goto error2;
     args->pass = (char *) malloc(arg_length + 1);
     if (!enif_get_string(env, argv[2], args->pass, arg_length + 1, ERL_NIF_LATIN1)) goto error3;
-     
+
     if (!enif_get_list_length(env, argv[3], &arg_length)) goto error3;
     args->bucket = (char *) malloc(arg_length + 1);
     if (!enif_get_string(env, argv[3], args->bucket, arg_length + 1, ERL_NIF_LATIN1)) goto error4;
@@ -53,7 +53,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     io_opts.version = 0;
     io_opts.v.v0.type = LCB_IO_OPS_DEFAULT;
     io_opts.v.v0.cookie = NULL;
-    
+
     memset(&create_options, 0, sizeof(create_options));
     err = lcb_create_io_ops(&create_options.v.v0.io, &io_opts);
     if (err != LCB_SUCCESS) {
@@ -80,9 +80,8 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
                 enif_make_string(env, lcb_strerror(NULL, err), ERL_NIF_LATIN1));
     }
 
-    (void)lcb_set_error_callback(handle->instance, error_callback);
-    (void)lcb_set_get_callback(handle->instance, get_callback); 
-    (void)lcb_set_store_callback(handle->instance, store_callback); 
+    (void)lcb_set_get_callback(handle->instance, get_callback);
+    (void)lcb_set_store_callback(handle->instance, store_callback);
     (void)lcb_set_unlock_callback(handle->instance, unlock_callback);
     (void)lcb_set_touch_callback(handle->instance, touch_callback);
     (void)lcb_set_arithmetic_callback(handle->instance, arithmetic_callback);
@@ -168,10 +167,10 @@ ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj)
     cmd.v.v0.cas = args->cas;
 
     ret = lcb_store(handle->instance, &cb, 1, commands);
-    
+
     free(args->key);
     free(args->bytes);
-    
+
     if (ret != LCB_SUCCESS) {
         return return_lcb_error(env, ret);
     }
@@ -192,7 +191,7 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM tail;
     ErlNifBinary key_binary;
 
-    if (!enif_get_list_length(env, argv[0], &args->numkeys)) goto error0;     
+    if (!enif_get_list_length(env, argv[0], &args->numkeys)) goto error0;
     args->keys = malloc(sizeof(char*) * args->numkeys);
     args->nkeys = malloc(sizeof(size_t) * args->numkeys);
     currKey = malloc(sizeof(ERL_NIF_TERM));
@@ -205,7 +204,7 @@ void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         args->nkeys[i] = key_binary.size;
         i++;
     }
-    
+
     if (!enif_get_int(env, argv[1], &args->exp)) goto error1;
     if (!enif_get_int(env, argv[2], &args->lock)) goto error1;
 
@@ -232,10 +231,10 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     mget_args_t* args = (mget_args_t*)obj;
 
-    struct libcouchbase_callback_m cb; 
+    struct libcouchbase_callback_m cb;
 
     lcb_error_t ret;
-    
+
     ERL_NIF_TERM* results;
     ERL_NIF_TERM returnValue;
     ErlNifBinary databin;
@@ -271,21 +270,21 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     lcb_wait(handle->instance);
 
     results = malloc(sizeof(ERL_NIF_TERM) * numkeys);
-    i = 0; 
+    i = 0;
     for(; i < numkeys; i++) {
         enif_alloc_binary(cb.ret[i]->nkey, &key_binary);
         memcpy(key_binary.data, cb.ret[i]->key, cb.ret[i]->nkey);
         if (cb.ret[i]->error == LCB_SUCCESS) {
             enif_alloc_binary(cb.ret[i]->size, &databin);
             memcpy(databin.data, cb.ret[i]->data, cb.ret[i]->size);
-            results[i] = enif_make_tuple4(env, 
-                    enif_make_uint64(env, cb.ret[i]->cas), 
-                    enif_make_int(env, cb.ret[i]->flag), 
+            results[i] = enif_make_tuple4(env,
+                    enif_make_uint64(env, cb.ret[i]->cas),
+                    enif_make_int(env, cb.ret[i]->flag),
                     enif_make_binary(env, &key_binary),
                     enif_make_binary(env, &databin));
             free(cb.ret[i]->data);
         } else {
-            results[i] = enif_make_tuple2(env, 
+            results[i] = enif_make_tuple2(env,
                     enif_make_binary(env, &key_binary),
                     return_lcb_error(env, cb.ret[i]->error));
         }
@@ -296,7 +295,7 @@ ERL_NIF_TERM cb_mget(ErlNifEnv* env, handle_t* handle, void* obj)
     }
 
     returnValue = enif_make_list_from_array(env, results, numkeys);
-    
+
     free(results);
     free(cb.ret);
     free(keys);
@@ -332,10 +331,10 @@ ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     unlock_args_t* args = (unlock_args_t*)obj;
 
-    struct libcouchbase_callback cb; 
+    struct libcouchbase_callback cb;
 
     lcb_error_t ret;
-         
+
     lcb_unlock_cmd_t unlock;
     memset(&unlock, 0, sizeof(unlock));
     unlock.v.v0.key = args->key;
@@ -352,7 +351,7 @@ ERL_NIF_TERM cb_unlock(ErlNifEnv* env, handle_t* handle, void* obj)
     lcb_wait(handle->instance);
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
-    } 
+    }
     return A_OK(env);
 }
 
@@ -377,7 +376,7 @@ void* cb_mtouch_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         args->nkeys[i] = key_binary.size;
         i++;
     }
-    
+
     args->exp = malloc(sizeof(int64_t) * args->numkeys);
     tail = argv[1];
     int i2 = 0;
@@ -410,15 +409,15 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     mtouch_args_t* args = (mtouch_args_t*)obj;
 
-    struct libcouchbase_callback_m cb; 
+    struct libcouchbase_callback_m cb;
     int i = 0;
     lcb_error_t ret;
-    
+
     ERL_NIF_TERM* results;
     ERL_NIF_TERM returnValue;
 
     ErlNifBinary key_binary;
-    
+
     cb.currKey = 0;
     cb.ret = malloc(sizeof(struct libcouchbase_callback*) * args->numkeys);
 
@@ -434,14 +433,14 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
     }
 
     ret = lcb_touch(handle->instance, &cb, args->numkeys, commands);
-    
+
     if (ret != LCB_SUCCESS) {
         return return_lcb_error(env, ret);
     }
     lcb_wait(handle->instance);
-    
+
     results = malloc(sizeof(ERL_NIF_TERM) * args->numkeys);
-    i = 0; 
+    i = 0;
     for(; i < args->numkeys; i++) {
         enif_alloc_binary(cb.ret[i]->nkey, &key_binary);
         memcpy(key_binary.data, cb.ret[i]->key, cb.ret[i]->nkey);
@@ -499,10 +498,10 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     arithmetic_args_t* args = (arithmetic_args_t*)obj;
 
-    struct libcouchbase_callback cb; 
+    struct libcouchbase_callback cb;
 
     lcb_error_t ret; //for checking responses
-    
+
     lcb_arithmetic_cmd_t arithmetic;
     const lcb_arithmetic_cmd_t* commands[1];
     commands[0] = &arithmetic;
@@ -514,7 +513,7 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
     arithmetic.v.v0.delta = args->delta;
     arithmetic.v.v0.exptime = args->exp;
     ret = lcb_arithmetic(handle->instance, &cb, 1, commands);
- 
+
     free(args->key);
     if (ret != LCB_SUCCESS) {
         return return_lcb_error(env, ret);
@@ -522,7 +521,7 @@ ERL_NIF_TERM cb_arithmetic(ErlNifEnv* env, handle_t* handle, void* obj)
     lcb_wait(handle->instance);
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
-    } 
+    }
     return enif_make_tuple2(env, A_OK(env), return_value(env, &cb));
 }
 
@@ -536,7 +535,7 @@ void* cb_remove_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->key = malloc(sizeof(char) * key_binary.size);
     memcpy(args->key, key_binary.data, key_binary.size);
     args->nkey = key_binary.size;
-    
+
     if (!enif_get_int(env, argv[1], &args->cas)) goto error1;
 
     return (void*)args;
@@ -553,7 +552,7 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     remove_args_t* args = (remove_args_t*)obj;
 
-    struct libcouchbase_callback cb; 
+    struct libcouchbase_callback cb;
 
     lcb_error_t ret; //for checking responses
 
@@ -576,7 +575,7 @@ ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj)
 
     if(cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
-    } 
+    }
 
     return A_OK(env);
 }
@@ -720,7 +719,7 @@ ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie) {
     enif_alloc_binary(cb->size, &value_binary);
     memcpy(value_binary.data, cb->data, cb->size);
     term  =   enif_make_tuple3(env, enif_make_int(env, cb->cas),
-                                           enif_make_int(env, cb->flag), 
+                                           enif_make_int(env, cb->flag),
                                            enif_make_binary(env, &value_binary));
     free(cb->data);
     return term;
