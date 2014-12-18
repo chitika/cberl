@@ -3,7 +3,7 @@
 %%% @version 0.0.3
 
 -module(cberl).
--vsn("0.0.3").
+-vsn("1.0.5").
 -include("cberl.hrl").
 
 -export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
