@@ -46,7 +46,8 @@ start_link(PoolName, NumCon, Host, Username, Password) ->
 %% Username the username to use
 %% Password The password
 %% bucket The bucket to connect to
-%% @equiv start_link(PoolName, NumCon, Host, Username, Password, cberl_transcoder).
+%% @end
+%% @equiv start_link(PoolName, NumCon, Host, Username, Password, cberl_transcoder)
 start_link(PoolName, NumCon, Host, Username, Password, BucketName) ->
     start_link(PoolName, NumCon, Host, Username, Password, BucketName, cberl_transcoder).
 
