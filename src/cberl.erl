@@ -387,10 +387,7 @@ query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
-view_error(<<"not_found">>) -> not_found;
-view_error(<<"bad_request">>) -> bad_request;
-view_error(<<"req_timedout">>) -> req_timedout;
-view_error(Error) -> list_to_atom(binary_to_list(Error)). %% kludge until I figure out all the errors
+view_error(Error) -> list_to_atom(binary_to_list(Error)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN DOCUMENT MANAGMENT %%%
