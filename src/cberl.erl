@@ -8,20 +8,20 @@
 
 -export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
 -export([stop/1]).
-%store operations
+%% store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5, store/7]).
-%update operations
+%% update operations
 -export([append/3, prepend/3, touch/3, mtouch/3]).
 -export([incr/3, incr/4, incr/5, decr/3, decr/4, decr/5]).
 -export([arithmetic/6]).
-%retrieval operations
+-export([append/4, prepend/4]).
+%% retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
-%remove
+%% removal operations
 -export([remove/2, flush/1, flush/2]).
-%design doc opertations
+%% design doc opertations
 -export([set_design_doc/3, remove_design_doc/2]).
-
 
 %% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "", "")
 start_link(PoolName, NumCon) ->
@@ -102,9 +102,23 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 %%% UPDATE OPERATIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% @deprecated
+%% @equiv append(PoolPid, Key, Value)
+%% @doc Deprecated append function which accepts an _unused_ CAS value
+-spec append(pid(), integer(), key(), value()) -> ok | {error, _}.
+append(PoolPid, _Cas, Key, Value) ->
+    append(PoolPid, Key, Value).
+
 -spec append(pid(), key(), value()) -> ok | {error, _}.
 append(PoolPid, Key, Value) ->
     store(PoolPid, append, Key, Value, none, 0, 0).
+
+%% @deprecated
+%% @equiv prepend(PoolPid, Key, Value)
+%% @doc Deprecated prepend function which accepts an _unused_ CAS value
+-spec prepend(pid(), key(), value()) -> ok | {error, _}.
+prepend(PoolPid, _Cas, Key, Value) ->
+    prepend(PoolPid, Key, Value).
 
 -spec prepend(pid(), key(), value()) -> ok | {error, _}.
 prepend(PoolPid, Key, Value) ->
@@ -291,7 +305,7 @@ http(PoolPid, Path, Body, ContentType, Method, Type) ->
 view(PoolPid, DocName, ViewName, Args) ->
     Path = string:join(["_design", DocName, "_view", ViewName], "/"),
     Resp = case proplists:get_value(keys, Args) of
-        undefined -> 
+        undefined ->
             http(PoolPid, string:join([Path, query_args(Args)], "?"), "", "application/json", get, view);
         Keys ->
             http(PoolPid, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(iolist_to_binary(jiffy:encode({[{keys, Keys}]}))), "application/json", post, view)
