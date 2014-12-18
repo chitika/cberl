@@ -61,6 +61,9 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) -
 		  {transcoder, Transcoder}],
     poolboy:start_link(PoolArgs, WorkerArgs).
 
+stop(PoolPid) ->
+    poolboy:stop(PoolPid).
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% STORE OPERATIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,6 +267,10 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
             end
     end.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%           VIEWS           %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% @doc execute a command with the REST API
 %% PoolPid pid of connection pool
 %% Path HTTP path
@@ -284,7 +291,7 @@ http(PoolPid, Path, Body, ContentType, Method, Type) ->
 view(PoolPid, DocName, ViewName, Args) ->
     Path = string:join(["_design", DocName, "_view", ViewName], "/"),
     Resp = case proplists:get_value(keys, Args) of
-        undefined ->  %% FIXME maybe not have to pass in an empty json obj here
+        undefined -> 
             http(PoolPid, string:join([Path, query_args(Args)], "?"), "", "application/json", get, view);
         Keys ->
             http(PoolPid, string:join([Path, query_args(proplists:delete(keys, Args))], "?"), binary_to_list(iolist_to_binary(jiffy:encode({[{keys, Keys}]}))), "application/json", post, view)
@@ -312,8 +319,19 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
         {error, _} = E -> E
     end.
 
-stop(PoolPid) ->
-    poolboy:stop(PoolPid).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% DESIGN DOCUMENT MANAGMENT %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+set_design_doc(PoolPid, DocName, DesignDoc) ->
+    Path = string:join(["_design", DocName], "/"),
+    {ok, _, _} = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
+    ok.
+
+remove_design_doc(PoolPid, DocName) ->
+    Path = string:join(["_design", DocName], "/"),
+    {ok, _, _} = http(PoolPid, Path, "", "application/json", delete, view),
+    ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%    INTERNAL FUNCTIONS     %%%
@@ -389,16 +407,3 @@ query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid",
 
 view_error(Error) -> list_to_atom(binary_to_list(Error)).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% DESIGN DOCUMENT MANAGMENT %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-set_design_doc(PoolPid, DocName, DesignDoc) ->
-    Path = string:join(["_design", DocName], "/"),
-    {ok, _, _} = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
-    ok.
-
-remove_design_doc(PoolPid, DocName) ->
-    Path = string:join(["_design", DocName], "/"),
-    {ok, _, _} = http(PoolPid, Path, "", "application/json", delete, view),
-    ok.
