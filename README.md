@@ -90,6 +90,6 @@ Takes in a flag (from couchbase) and the value (as binary) and turns it into the
 
 __flag/1:__
 
-Turns an encoder_name (or list of them) into an integer. This value is sent to CB during set operations and this is what you get in decode value. You must return a value for 'standart' encoder if you are not planning to specify an encoder for every set operation.
+Turns an encoder_name (or list of them) into an integer. This value is sent to CB during set operations and this is what you get in decode value. You must return a value for 'standard' encoder if you are not planning to specify an encoder for every set operation.
 
 Check out [cberl_transcoder.erl](https://github.com/wcummings/cberl/blob/master/src/cberl_transcoder.erl) it is pretty straightforward.
