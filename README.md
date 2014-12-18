@@ -9,9 +9,10 @@ Tested on OSX, Debian Squeeze and Amazon Linux.
 
 Quick Setup/Start
 ---------
+
 First you must have libcouchbase installed. 
 
-On mac install [homebrew](http://mxcl.github.com/homebrew/,"homebrew") if you haven't already then run:
+On OSX install [homebrew](http://mxcl.github.com/homebrew/,"homebrew") if you haven't already then run:
 
 ```shell
 brew install https://github.com/couchbase/homebrew/raw/stable/Library/Formula/libcouchbase.rb
@@ -47,7 +48,7 @@ Make sure you have couchbase running on localhost or use cberl:new(Host) instead
 ```erlang
 % create a connection pool  of 5 connections named cberl_default
 % you can provide more argument like host, username, password, 
-% bucket and transcoder - look at [cberl.erl](https://github.com/wcummings/cberl/blob/master/src/cberl.erl) for more detail 
+% bucket and transcoder - look at https://github.com/wcummings/cberl/blob/master/src/cberl.erl for more detail 
 cberl:start_link(cberl_default, 5).
 {ok, <0.33.0>}
 % Poolname, Key, Expire - 0 for infinity, Value
