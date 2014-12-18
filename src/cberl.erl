@@ -22,6 +22,8 @@
 -export([remove/2, flush/1, flush/2]).
 %% design doc opertations
 -export([set_design_doc/3, remove_design_doc/2]).
+-deprecated({append, 4}).
+-deprecated({prepend, 4}).
 
 %% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "", "")
 start_link(PoolName, NumCon) ->
