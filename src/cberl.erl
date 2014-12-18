@@ -1,6 +1,6 @@
 %%% @author Ali Yakamercan <aliyakamercan@gmail.com>
 %%% @copyright 2012-2013 Chitika Inc.
-%%% @version 0.0.3
+%%% @version 1.0.5
 
 -module(cberl).
 -vsn("1.0.5").
@@ -116,7 +116,7 @@ append(PoolPid, Key, Value) ->
 %% @deprecated
 %% @equiv prepend(PoolPid, Key, Value)
 %% @doc Deprecated prepend function which accepts an _unused_ CAS value
--spec prepend(pid(), key(), value()) -> ok | {error, _}.
+-spec prepend(pid(), integer(), key(), value()) -> ok | {error, _}.
 prepend(PoolPid, _Cas, Key, Value) ->
     prepend(PoolPid, Key, Value).
 
