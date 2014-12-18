@@ -181,7 +181,7 @@ ERL_NIF_TERM cb_store(ErlNifEnv* env, handle_t* handle, void* obj)
     if (cb.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.error);
     }
-    return A_OK(env);
+    return enif_make_tuple2(env, A_OK(env), enif_make_uint64(env, cb.cas));
 }
 
 void* cb_mget_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
