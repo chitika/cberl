@@ -342,13 +342,13 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
 
 set_design_doc(PoolPid, DocName, DesignDoc) ->
     Path = string:join(["_design", DocName], "/"),
-    {ok, _, _} = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
-    ok.
+    Resp = http(PoolPid, Path, binary_to_list(iolist_to_binary(jiffy:encode(DesignDoc))), "application/json", put, view),
+    decode_update_design_doc_resp(Resp).
 
 remove_design_doc(PoolPid, DocName) ->
     Path = string:join(["_design", DocName], "/"),
-    {ok, _, _} = http(PoolPid, Path, "", "application/json", delete, view),
-    ok.
+    Resp = http(PoolPid, Path, "", "application/json", delete, view),
+    decode_update_design_doc_resp(Resp).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%    INTERNAL FUNCTIONS     %%%
@@ -381,6 +381,14 @@ decode_query_resp({ok, _, Resp}) ->
             {error, {view_error(Error), Reason}}
     end;
 decode_query_resp({error, _} = E) -> E.
+
+decode_update_design_doc_resp({ok, Http_Code, _Resp}) when 200 =< Http_Code andalso Http_Code < 300 -> ok;
+decode_update_design_doc_resp({ok, _Http_Code, Resp}) ->
+  case jiffy:decode(Resp) of
+    {[{<<"error">>,Error}, {<<"reason">>, Reason}]} ->
+            {error, {view_error(Error), Reason}};
+    _Other -> {error, {unknown_error, Resp}}
+  end.
 
 query_arg({descending, true}) -> "descending=true";
 query_arg({descending, false}) -> "descending=false";
