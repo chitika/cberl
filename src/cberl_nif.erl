@@ -6,11 +6,9 @@
 -define(NIF_STUB, erlang:nif_error(nif_library_not_loaded)).
 
 init() ->
-    PrivDir = case code:priv_dir(?MODULE) of
+    PrivDir = case code:priv_dir(cberl) of
                   {error, bad_name} ->
-                      EbinDir = filename:dirname(code:which(?MODULE)),
-                      AppPath = filename:dirname(EbinDir),
-                      filename:join(AppPath, "priv");
+                      re:replace(code:which(?MODULE), "cberl.*", "cberl/priv",[{return,list}]);
                   Path ->
                       Path
               end,
