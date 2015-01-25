@@ -39,7 +39,7 @@ void arithmetic_callback(lcb_t instance,
         cb->cas = resp->v.v0.cas;
         cb->data = malloc(20*sizeof(char));
         memset(cb->data, 0, 20);
-        sprintf(cb->data, "%llu", resp->v.v0.value);
+        sprintf(cb->data, "%llu", (long long unsigned) resp->v.v0.value);
         cb->size = strlen(cb->data);
     }
 }
