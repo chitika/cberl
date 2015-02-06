@@ -15,7 +15,7 @@ First you must have libcouchbase installed.
 On OSX install [homebrew](http://mxcl.github.com/homebrew/,"homebrew") if you haven't already then run:
 
 ```shell
-brew install https://github.com/couchbase/homebrew/raw/stable/Library/Formula/libcouchbase.rb
+brew update && brew install libcouchbase
 ```
 
 On Amazon linux:
