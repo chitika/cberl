@@ -644,6 +644,10 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
 
     lcb_wait(handle->instance);
 
+    enif_free(args->content_type);
+    enif_free(args->body);
+    enif_free(args->path);
+
     if(cb.ret.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.ret.error);
     }
