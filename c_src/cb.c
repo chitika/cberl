@@ -622,7 +622,7 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
 {
     http_args_t* args = (http_args_t*)obj;
 
-    struct libcouchbase_callback_http cb;
+    struct libcouchbase_callback_http cb = {0};
     lcb_error_t ret;
     lcb_http_request_t req;
 
@@ -644,6 +644,10 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
 
     lcb_wait(handle->instance);
 
+    enif_free(args->content_type);
+    enif_free(args->body);
+    enif_free(args->path);
+
     if(cb.ret.error != LCB_SUCCESS) {
         return return_lcb_error(env, cb.ret.error);
     }
@@ -651,6 +655,8 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
     ErlNifBinary value_binary;
     enif_alloc_binary(cb.ret.size, &value_binary);
     memcpy(value_binary.data, cb.ret.data, cb.ret.size);
+    free(cb.ret.data);
+    free(cb.ret.key);
     return enif_make_tuple3(env, A_OK(env), enif_make_int(env, cb.status), enif_make_binary(env, &value_binary));
 }
 
