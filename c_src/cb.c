@@ -464,6 +464,7 @@ ERL_NIF_TERM cb_mtouch(ErlNifEnv* env, handle_t* handle, void* obj)
     free(results);
     free(cb.ret);
     free(args->keys);
+    free(args->exp);
     free(args->nkeys);
 
     return enif_make_tuple2(env, A_OK(env), returnValue);
