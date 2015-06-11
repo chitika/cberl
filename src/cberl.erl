@@ -355,8 +355,9 @@ remove_design_doc(PoolPid, DocName) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 execute(PoolPid, Cmd) ->
+    Timeout = application:get_env(cberl, http_timeout, 60000),
     poolboy:transaction(PoolPid, fun(Worker) ->
-            gen_server:call(Worker, Cmd)
+            gen_server:call(Worker, Cmd, Timeout)
        end).
 
 http_type(view) -> 0;
