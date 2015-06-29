@@ -89,7 +89,7 @@ NIF(cberl_nif_control)
         nargs = tail;
     }
 
-    void* args = handle->args_calltable[cmd](env, argc, new_argv);
+    void* args = handle->args_calltable[cmd](env, arg_length, new_argv);
 
     enif_free(new_argv);
 
