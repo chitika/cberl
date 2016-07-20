@@ -8,7 +8,9 @@
 init() ->
     PrivDir = case code:priv_dir(cberl) of
                   {error, bad_name} ->
-                      re:replace(code:which(?MODULE), "cberl.*", "cberl/priv",[{return,list}]);
+                      EbinDir = filename:dirname(code:which(?MODULE)),
+                      AppPath = filename:dirname(EbinDir),
+                      filename:join(AppPath, "priv/lib");
                   Path ->
                       Path
               end,
