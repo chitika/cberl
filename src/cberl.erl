@@ -57,11 +57,11 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) -
                 {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
-    WorkerArgs = [{host, Host},
-		  {username, Username},
-		  {password, Password},
-		  {bucketname, BucketName},
-		  {transcoder, Transcoder}],
+    WorkerArgs = [{host, list_convert(Host)},
+          {username, list_convert(Username)},
+          {password, list_convert(Password)},
+          {bucketname, list_convert(BucketName)},
+          {transcoder, Transcoder}],
     poolboy:start_link(PoolArgs, WorkerArgs).
 
 stop(PoolPid) ->
@@ -433,3 +433,9 @@ query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid",
 
 view_error(Error) -> list_to_atom(binary_to_list(Error)).
 
+list_convert(Dato) when is_list(Dato) -> Dato;
+list_convert(Dato) when is_integer(Dato) -> integer_to_list(Dato);
+list_convert(Dato) when is_tuple(Dato) -> tuple_to_list(Dato);
+list_convert(Dato) when is_atom(Dato) -> atom_to_list(Dato);
+list_convert(Dato) when is_binary(Dato) -> binary_to_list(Dato);
+list_convert(_) -> "".
