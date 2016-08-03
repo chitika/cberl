@@ -3,9 +3,12 @@
 -include("cberl.hrl").
 
 -define('CBE_NONE',     0).
--define('CBE_JSON',     16#0002).
--define('CBE_RAW',      16#0004).
--define('CBE_STR',      16#0008).
+%%-define('CBE_JSON',     16#0002).
+%%-define('CBE_RAW',      16#0004).
+%%-define('CBE_STR',      16#0008).
+-define('CBE_JSON',     16#02000000).
+-define('CBE_RAW',      16#03000000).
+-define('CBE_STR',      16#04000000).
 
 -define(STANDARD_FLAG, json).
 
