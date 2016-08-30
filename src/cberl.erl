@@ -394,7 +394,7 @@ decode_update_design_doc_resp({ok, _Http_Code, Resp}) ->
 query_arg({descending, true}) -> "descending=true";
 query_arg({descending, false}) -> "descending=false";
 
-query_arg({endkey, V}) when is_list(V) -> string:join(["endkey", V], "=");
+query_arg({endkey, V}) -> string:join(["endkey", binary_to_list(iolist_to_binary(jiffy:encode(V)))], "=");
 
 query_arg({endkey_docid, V}) when is_list(V) -> string:join(["endkey_docid", V], "=");
 
@@ -427,7 +427,7 @@ query_arg({stale, false}) -> "stale=false";
 query_arg({stale, ok}) -> "stale=ok";
 query_arg({stale, update_after}) -> "stale=update_after";
 
-query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
+query_arg({startkey, V}) -> string:join(["startkey", binary_to_list(iolist_to_binary(jiffy:encode(V)))], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
