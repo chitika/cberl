@@ -66,7 +66,7 @@ Views
 cberl has support for querying views via the view/4 functions:
 
 ```erlang
-cberl:view(default, "all", "all", []).
+cberl:view(cberl_default, "all", "all", []).
 {ok,{1,
     [[{<<"id">>,<<"test">>},
     {<<"key">>,<<"test">>},
