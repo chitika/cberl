@@ -1,4 +1,5 @@
 #include <libcouchbase/couchbase.h>
+#include <libcouchbase/n1ql.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -659,6 +660,150 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
     free(cb.ret.data);
     free(cb.ret.key);
     return enif_make_tuple3(env, A_OK(env), enif_make_int(env, cb.status), enif_make_binary(env, &value_binary));
+}
+
+void* cb_n1ql_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+	n1ql_args_t* args = (n1ql_args_t*)enif_alloc(sizeof(n1ql_args_t));
+
+	ERL_NIF_TERM* currParam;
+	ERL_NIF_TERM tail;
+	ErlNifBinary query_binary;
+
+	if (!enif_inspect_iolist_as_binary(env, argv[0], &query_binary)) goto error0;
+	args->query = malloc(sizeof(char) * (query_binary.size + 1));
+	memset(args->query, 0, query_binary.size + 1);
+	memcpy(args->query, query_binary.data, query_binary.size);
+	args->nquery = query_binary.size;
+
+	if (!enif_get_list_length(env, argv[1], &args->numparams)) goto error1;
+	args->params = malloc(sizeof(char*) * args->numparams);
+	args->nparams = malloc(sizeof(size_t) * args->numparams);
+	currParam = malloc(sizeof(ERL_NIF_TERM));
+	tail = argv[1];
+	int i = 0;
+	while(0 != enif_get_list_cell(env, tail, currParam, &tail)) {
+		ErlNifBinary param_binary;
+		if (!enif_inspect_iolist_as_binary(env, *currParam, &param_binary)) goto error2;
+		args->params[i] = malloc(sizeof(char) * param_binary.size);
+		memcpy(args->params[i], param_binary.data, param_binary.size);
+		args->nparams[i] = param_binary.size;
+		i++;
+	}
+
+	if (!enif_get_int(env, argv[2], (int*)&args->prepared)) goto error2;
+
+	free(currParam);
+	return (void*)args;
+
+	int f = 0;
+	error2:
+		for(f = 0; f < i; f++) {
+			free(args->params[f]);
+		}
+		free(args->query);
+		free(args->params);
+		free(args->nparams);
+		free(currParam);
+	error1:
+		free(args->query);
+		enif_free(args);
+	error0:
+		enif_free(args);
+
+	return NULL;
+}
+
+ERL_NIF_TERM cb_n1ql(ErlNifEnv* env, handle_t* handle, void* obj)
+{
+	n1ql_args_t* args = (n1ql_args_t*)obj;
+	lcb_error_t ret;
+	int f = 0;
+	lcb_N1QLPARAMS *params = lcb_n1p_new();
+	lcb_CMDN1QL cmd = { 0 };
+	struct libcouchbase_callback_n1ql cb;
+
+	if (args->prepared) {
+		cmd.cmdflags |= LCB_CMDN1QL_F_PREPCACHE;
+	}
+
+	if ((ret = lcb_n1p_setstmtz(params,  args->query)) != LCB_SUCCESS) goto error0;
+
+	for(f = 0; f < args->numparams; f++) {
+		if ((ret = lcb_n1p_posparam(params, args->params[f], args->nparams[f])) != LCB_SUCCESS) goto error0;
+	}
+
+	cb.currrow = 0;
+	cb.size = 5;
+	cb.ret = malloc(sizeof(struct libcouchbase_callback*) * 1);
+	cb.meta = malloc(sizeof(struct libcouchbase_callback*) * 1);
+	cmd.callback = n1ql_callback;
+
+	if ((ret = lcb_n1p_mkcmd(params, &cmd)) != LCB_SUCCESS) goto error1;
+	if ((ret = lcb_n1ql_query(handle->instance, &cb, &cmd)) != LCB_SUCCESS) goto error1;
+	lcb_n1p_free(params);
+	lcb_wait(handle->instance);
+
+	for(f = 0; f < args->numparams; f++) {
+		free(args->params[f]);
+	}
+	free(args->query);
+	free(args->params);
+	free(args->nparams);
+
+	ERL_NIF_TERM* results;
+	ErlNifBinary databin;
+	ERL_NIF_TERM metaValue;
+	ERL_NIF_TERM returnValue;
+	results = malloc(sizeof(ERL_NIF_TERM) * cb.currrow);
+
+	// Add meta data section
+	enif_alloc_binary(cb.meta->size, &databin);
+	memcpy(databin.data, cb.meta->data, cb.meta->size);
+	metaValue = enif_make_binary(env, &databin);
+	free(cb.meta->data);
+	free(cb.meta);
+
+	int i = 0;
+	for(; i < cb.currrow; i++) {
+		if (cb.ret[i]->error == LCB_SUCCESS) {
+			enif_alloc_binary(cb.ret[i]->size, &databin);
+			memcpy(databin.data, cb.ret[i]->data, cb.ret[i]->size);
+			results[i] = enif_make_binary(env, &databin);
+		} else {
+			results[i] = enif_make_tuple1(env,
+					return_lcb_error(env, cb.ret[i]->error));
+		}
+		free(cb.ret[i]->data);
+		free(cb.ret[i]);
+	}
+	free(cb.ret);
+
+	returnValue = enif_make_list_from_array(env, results, cb.currrow);
+	free(results);
+	return enif_make_tuple3(env, A_OK(env), metaValue, returnValue);
+
+	error0:
+		free(args->query);
+		free(args->params);
+		free(args->nparams);
+		lcb_n1p_free(params);
+		for(f = 0; f < args->numparams; f++) {
+			free(args->params[f]);
+		}
+	error1:
+		free(cb.meta->data);
+		free(cb.meta);
+		free(cb.ret);
+		free(args->query);
+		free(args->params);
+		free(args->nparams);
+		lcb_n1p_free(params);
+		for(f = 0; f < args->numparams; f++) {
+			free(args->params[f]);
+		}
+
+	return return_lcb_error(env, ret);
 }
 
 ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value) {

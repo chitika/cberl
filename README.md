@@ -75,6 +75,35 @@ cberl:view(cberl_default, "all", "all", []).
 
 Shorthand for foldl, foldr and foreach are also provided.
 
+N1QL
+-----
+
+cberl has support for N1QL queries via the n1ql/4 and n1ql/5 functions:
+
+```erlang
+Dog = {[{<<"type">>,<<"dog">>},
+  {<<"name">>,<<"tom">>},
+  {<<"age">>,5},
+  {<<"color">>,<<"white">>}]}.
+cberl:set(cberl_default, <<"tom">>, 0, Dog).
+cberl:n1ql(cberl_default, <<"SELECT * FROM default WHERE type=$1 and age=$2 and color=$3">>, [<<"\"dog\"">>, <<"5">>, <<"\"white\"">>], false).
+{ok,{[{<<"requestID">>,
+       <<"a00b80e8-aea8-4a23-a0a9-5aba26d2b48f">>},
+      {<<"signature">>,{[{<<"*">>,<<"*">>}]}},
+      {<<"results">>,[]},
+      {<<"status">>,<<"success">>},
+      {<<"metrics">>,
+       {[{<<"elapsedTime">>,<<"21.644116ms">>},
+         {<<"executionTime">>,<<"21.60625ms">>},
+         {<<"resultCount">>,1},
+         {<<"resultSize">>,171}]}}]},
+    [{[{<<"default">>,
+        {[{<<"age">>,5},
+          {<<"color">>,<<"white">>},
+          {<<"name">>,<<"tom">>},
+          {<<"type">>,<<"dog">>}]}}]}]}
+```
+
 Custom Transcoders
 -----
 

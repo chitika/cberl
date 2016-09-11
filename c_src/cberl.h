@@ -2,10 +2,11 @@
 #define CBERL_H
 
 #include <libcouchbase/couchbase.h>
+#include <libcouchbase/n1ql.h>
 #include "queue.h"
 #include "erl_nif.h"
 
-#define A_OK(env)            enif_make_atom(env, "ok")
+#define A_OK(env)       enif_make_atom(env, "ok")
 #define A_ERROR(env)    enif_make_atom(env, "error")
 
 #define NIF(name)  ERL_NIF_TERM name(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])

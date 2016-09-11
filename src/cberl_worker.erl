@@ -114,6 +114,12 @@ handle_call({http, Path, Body, ContentType, Method, Chunked}, _From, State) ->
         {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
+handle_call({n1ql, Query, Params, Prepared, TranscoderOpts}, _From, State) ->
+    {Connected, Reply} = case connect(State) of
+        ok -> {true, n1ql(Query, Params, Prepared, TranscoderOpts, State)};
+        {error, _} = E -> {false, E}
+    end,
+    {reply, Reply, State#instance{connected = Connected}};
 handle_call(bucketname, _From, State = #instance{bucketname = BucketName}) ->
     {reply, {ok, BucketName}, State};
 handle_call(_Request, _From, State) ->
@@ -244,6 +250,19 @@ http(Path, Body, ContentType, Method, Chunked, #instance{handle = Handle}) ->
         Reply -> Reply
     end.
 
+n1ql(Query, Params, Prepared, TranscoderOpts, #instance{handle = Handle, transcoder = Transcoder}) ->
+	Flag = Transcoder:flag(TranscoderOpts),
+    ok = cberl_nif:control(Handle, op(n1ql), [Query, Params, Prepared]),
+    receive
+        {error, Error} -> {error, Error};
+        {ok, MetaBin, Results} ->
+            Data = lists:map(fun(Result) ->
+			    Transcoder:decode_value(Flag, Result)
+	                end, Results),
+            Meta = Transcoder:decode_value(Flag, MetaBin),
+            {ok, Meta, Data}
+    end.
+
 -spec operation_value(operation_type()) -> integer().
 operation_value(add) -> ?'CBE_ADD';
 operation_value(replace) -> ?'CBE_REPLACE';
@@ -259,7 +278,8 @@ op(unlock) -> ?'CMD_UNLOCK';
 op(mtouch) -> ?'CMD_MTOUCH';
 op(arithmetic) -> ?'CMD_ARITHMETIC';
 op(remove) -> ?'CMD_REMOVE';
-op(http) -> ?'CMD_HTTP'.
+op(http) -> ?'CMD_HTTP';
+op(n1ql) -> ?'CMD_N1QL'.
 
 -spec canonical_bucket_name(string()) -> string().
 canonical_bucket_name(Name) ->
