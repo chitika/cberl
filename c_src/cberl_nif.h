@@ -13,6 +13,7 @@
 #define CMD_ARITHMETIC  5
 #define CMD_REMOVE      6
 #define CMD_HTTP        7 
+#define CMD_N1QL        8
 
 typedef struct task {
     ErlNifPid* pid;

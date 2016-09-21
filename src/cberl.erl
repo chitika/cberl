@@ -17,7 +17,8 @@
 -export([append/4, prepend/4]).
 %% retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
-         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
+         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2,
+		 n1ql/4, n1ql/5]).
 %% removal operations
 -export([remove/2, flush/1, flush/2]).
 %% design doc opertations
@@ -335,6 +336,24 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
             lists:foreach(Func, Rows);
         {error, _} = E -> E
     end.
+
+n1ql(PoolPid, Query, Params, Prepared) ->
+	n1ql(PoolPid, Query, Params, Prepared, standard).
+
+n1ql(PoolPid, Query, Params, Prepared, TranscoderOpts) when is_binary(Query), is_atom(Prepared) ->
+	%% Checking for binaries to avoid segmentation fault
+	lists:foreach(fun(Param) ->
+			case is_binary(Param) of
+				true -> ok;
+				_ -> throw(invalid_parameter)
+			end
+		end, Params),
+	PreparedValue = case Prepared of
+			true -> 1;
+			false -> 0;
+			_ -> throw(invalid_flag)
+		end,
+	execute(PoolPid, {n1ql, Query, Params, PreparedValue, TranscoderOpts}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN DOCUMENT MANAGMENT %%%

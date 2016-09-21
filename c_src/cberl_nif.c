@@ -44,6 +44,8 @@ NIF(cberl_nif_new)
     handle->args_calltable[CMD_REMOVE]     = cb_remove_args;
     handle->calltable[CMD_HTTP]            = cb_http;
     handle->args_calltable[CMD_HTTP]       = cb_http_args;
+    handle->calltable[CMD_N1QL]            = cb_n1ql;
+    handle->args_calltable[CMD_N1QL]       = cb_n1ql_args;
 
     handle->thread_opts = enif_thread_opts_create("thread_opts");
 
