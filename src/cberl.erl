@@ -449,5 +449,9 @@ query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
-view_error(Error) -> list_to_atom(binary_to_list(Error)).
-
+view_error(Error) ->
+    ErrorStr = binary_to_list(Error),
+    case catch list_to_existing_atom(ErrorStr) of
+        {'EXIT', {badarg, _}} -> list_to_atom(ErrorStr);
+        TypeAtom -> TypeAtom
+    end.
