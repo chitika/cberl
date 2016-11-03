@@ -223,7 +223,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), [key()], integer()) -> list().
+-spec mget(pid(), [key()], integer()) -> list() | {error, _}.
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
 
@@ -232,7 +232,7 @@ mget(PoolPid, Keys, Exp) ->
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(pid(), key(), integer()) -> list().
+-spec getl(pid(), key(), integer()) -> list() | {error, _}.
 getl(PoolPid, Key, Exp) ->
     execute(PoolPid, {mget, [Key], Exp, 1}).
 
@@ -297,7 +297,7 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
 %% Method HTTP method
 %% Type Couchbase request type
 -spec http(pid(), string(), string(), string(), http_method(), http_type())
-	  -> {ok, binary()} | {error, _}.
+	  -> {ok, integer(), binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
