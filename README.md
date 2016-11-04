@@ -53,7 +53,7 @@ cberl:start_link(cberl_default, 5).
 {ok, <0.33.0>}
 % Poolname, Key, Expire - 0 for infinity, Value
 cberl:set(cberl_default, <<"fkey">>, 0, <<"cberl">>).
-ok
+{ok,CAS}
 cberl:get(cberl_default, <<"fkey">>).
 {<<"fkey">>, ReturnedCasValue, <<"cberl">>}
 ```

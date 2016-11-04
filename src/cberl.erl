@@ -73,32 +73,32 @@ stop(PoolPid) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @equiv add(PoolPid, Key, Exp, Value, standard)
--spec add(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec add(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value) ->
     add(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0)
--spec add(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec add(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv replace(PoolPid, Key, Exp, Value, standard)
--spec replace(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec replace(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value) ->
     replace(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, replace, "", Key, Value, Exp)
--spec replace(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec replace(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, replace, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv set(PoolPid, Key, Exp, Value, standard)
--spec set(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec set(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value) ->
     set(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, set, "", Key, Value, Exp)
--spec set(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec set(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, set, Key, Value, TranscoderOpts, Exp, 0).
 
@@ -113,7 +113,7 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 append(PoolPid, _Cas, Key, Value) ->
     append(PoolPid, Key, Value).
 
--spec append(pid(), key(), value()) -> ok | {error, _}.
+-spec append(pid(), key(), value()) -> {ok,integer()} | {error, _}.
 append(PoolPid, Key, Value) ->
     store(PoolPid, append, Key, Value, none, 0, 0).
 
@@ -124,7 +124,7 @@ append(PoolPid, Key, Value) ->
 prepend(PoolPid, _Cas, Key, Value) ->
     prepend(PoolPid, Key, Value).
 
--spec prepend(pid(), key(), value()) -> ok | {error, _}.
+-spec prepend(pid(), key(), value()) -> {ok,integer()} | {error, _}.
 prepend(PoolPid, Key, Value) ->
     store(PoolPid, prepend, Key, Value, none, 0, 0).
 
@@ -212,7 +212,7 @@ unlock(PoolPid, Key, Cas) ->
 %%     pass 0 for infinity
 %% CAS
 -spec store(pid(), operation_type(), key(), value(), atom(),
-            integer(), integer()) -> ok | {error, _}.
+            integer(), integer()) -> {ok,integer()} | {error, _}.
 store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
     execute(PoolPid, {store, Op, Key, Value,
                        TranscoderOpts, Exp, Cas}).
@@ -223,7 +223,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), [key()], integer()) -> list().
+-spec mget(pid(), [key()], integer()) -> list() | {error, _}.
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
 
@@ -232,7 +232,7 @@ mget(PoolPid, Keys, Exp) ->
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(pid(), key(), integer()) -> list().
+-spec getl(pid(), key(), integer()) -> list() | {error, _}.
 getl(PoolPid, Key, Exp) ->
     execute(PoolPid, {mget, [Key], Exp, 1}).
 
@@ -297,7 +297,7 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
 %% Method HTTP method
 %% Type Couchbase request type
 -spec http(pid(), string(), string(), string(), http_method(), http_type())
-	  -> {ok, binary()} | {error, _}.
+	  -> {ok, integer(), binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
