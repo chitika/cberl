@@ -251,14 +251,14 @@ http(Path, Body, ContentType, Method, Chunked, #instance{handle = Handle}) ->
     end.
 
 n1ql(Query, Params, Prepared, TranscoderOpts, #instance{handle = Handle, transcoder = Transcoder}) ->
-	Flag = Transcoder:flag(TranscoderOpts),
+    Flag = Transcoder:flag(TranscoderOpts),
     ok = cberl_nif:control(Handle, op(n1ql), [Query, Params, Prepared]),
     receive
         {error, Error} -> {error, Error};
         {ok, MetaBin, Results} ->
             Data = lists:map(fun(Result) ->
-			    Transcoder:decode_value(Flag, Result)
-	                end, Results),
+                                     Transcoder:decode_value(Flag, Result)
+                             end, Results),
             Meta = Transcoder:decode_value(Flag, MetaBin),
             {ok, Meta, Data}
     end.

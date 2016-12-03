@@ -18,7 +18,7 @@
 %% retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
          mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2,
-		 n1ql/4, n1ql/5]).
+         n1ql/4, n1ql/5]).
 %% removal operations
 -export([remove/2, flush/1, flush/2]).
 %% design doc opertations
@@ -59,10 +59,10 @@ start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) -
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
     WorkerArgs = [{host, Host},
-		  {username, Username},
-		  {password, Password},
-		  {bucketname, BucketName},
-		  {transcoder, Transcoder}],
+                  {username, Username},
+                  {password, Password},
+                  {bucketname, BucketName},
+                  {transcoder, Transcoder}],
     poolboy:start_link(PoolArgs, WorkerArgs).
 
 stop(PoolPid) ->
@@ -138,7 +138,7 @@ touch(PoolPid, Key, ExpTime) ->
     {ok, hd(Return)}.
 
 -spec mtouch(pid(), [key()], integer() | [integer()])
-	    -> {ok, any()} | {error, any()}.
+            -> {ok, any()} | {error, any()}.
 mtouch(PoolPid, Keys, ExpTime) when is_integer(ExpTime) ->
     mtouch(PoolPid, Keys, [ExpTime]);
 mtouch(PoolPid, Keys, ExpTimes) ->
@@ -297,7 +297,7 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
 %% Method HTTP method
 %% Type Couchbase request type
 -spec http(pid(), string(), string(), string(), http_method(), http_type())
-	  -> {ok, binary()} | {error, _}.
+          -> {ok, binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
@@ -338,22 +338,22 @@ foreach(Func, {PoolPid, DocName, ViewName, Args}) ->
     end.
 
 n1ql(PoolPid, Query, Params, Prepared) ->
-	n1ql(PoolPid, Query, Params, Prepared, standard).
+    n1ql(PoolPid, Query, Params, Prepared, standard).
 
 n1ql(PoolPid, Query, Params, Prepared, TranscoderOpts) when is_binary(Query), is_atom(Prepared) ->
-	%% Checking for binaries to avoid segmentation fault
-	lists:foreach(fun(Param) ->
-			case is_binary(Param) of
-				true -> ok;
-				_ -> throw(invalid_parameter)
-			end
-		end, Params),
-	PreparedValue = case Prepared of
-			true -> 1;
-			false -> 0;
-			_ -> throw(invalid_flag)
-		end,
-	execute(PoolPid, {n1ql, Query, Params, PreparedValue, TranscoderOpts}).
+    %% Checking for binaries to avoid segmentation fault
+    lists:foreach(fun(Param) ->
+                          case is_binary(Param) of
+                              true -> ok;
+                              _ -> throw(invalid_parameter)
+                          end
+                  end, Params),
+    PreparedValue = case Prepared of
+                        true -> 1;
+                        false -> 0;
+                        _ -> throw(invalid_flag)
+                    end,
+    execute(PoolPid, {n1ql, Query, Params, PreparedValue, TranscoderOpts}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DESIGN DOCUMENT MANAGMENT %%%
@@ -449,5 +449,9 @@ query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
-view_error(Error) -> list_to_atom(binary_to_list(Error)).
-
+view_error(Error) ->
+    ErrorStr = binary_to_list(Error),
+    case catch list_to_existing_atom(ErrorStr) of
+        {'EXIT', {badarg, _}} -> list_to_atom(ErrorStr);
+        TypeAtom -> TypeAtom
+    end.
