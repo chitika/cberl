@@ -26,17 +26,17 @@
 -deprecated({append, 4}).
 -deprecated({prepend, 4}).
 
-%% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "", "")
+%% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "")
 start_link(PoolName, NumCon) ->
-    start_link(PoolName, NumCon, "localhost:8091", "", "", "").
+    start_link(PoolName, NumCon, "localhost:8091", "", "").
 
-%% @equiv start_link(PoolName, NumCon, Host, "", "", "")
+%% @equiv start_link(PoolName, NumCon, Host, "", "")
 start_link(PoolName, NumCon, Host) ->
-    start_link(PoolName, NumCon, Host, "", "", "").
+    start_link(PoolName, NumCon, Host, "", "").
 
-%% @equiv start_link(PoolName, NumCon, Host, Username, Password, "")
+%% @equiv start_link(PoolName, NumCon, Host, Username, Password, "default")
 start_link(PoolName, NumCon, Host, Username, Password) ->
-    start_link(PoolName, NumCon, Host, Username, Password, "").
+    start_link(PoolName, NumCon, Host, Username, Password, "default").
 
 %% @doc Create an instance of libcouchbase
 %% hosts A list of hosts:port separated by ';' to the
