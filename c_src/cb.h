@@ -66,6 +66,12 @@ typedef struct http_args {
     lcb_http_type_t type;
 } http_args_t;
 
+typedef struct cntl_args {
+    int mode;
+    int cmd;
+    int value;
+} cntl_args_t;
+
 void* cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_store_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
@@ -82,6 +88,8 @@ void* cb_remove_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_remove(ErlNifEnv* env, handle_t* handle, void* obj);
 void* cb_http_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj);
+void* cb_cntl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM cb_cntl(ErlNifEnv* env, handle_t* handle, void* obj);
 
 ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value);
 ERL_NIF_TERM return_value(ErlNifEnv* env, void * cookie);

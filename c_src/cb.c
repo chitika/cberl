@@ -661,6 +661,37 @@ ERL_NIF_TERM cb_http(ErlNifEnv* env, handle_t* handle, void* obj)
     return enif_make_tuple3(env, A_OK(env), enif_make_int(env, cb.status), enif_make_binary(env, &value_binary));
 }
 
+void* cb_cntl_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    cntl_args_t* args = (cntl_args_t*)enif_alloc(sizeof(cntl_args_t));
+
+    if (!enif_get_int(env, argv[0], &args->mode)) goto error0;
+    if (!enif_get_int(env, argv[1], &args->cmd)) goto error0;
+    if (!enif_get_int(env, argv[2], &args->value)) goto error0;
+
+    return args;
+
+    error0:
+    enif_free(args);
+
+    return NULL;
+}
+
+ERL_NIF_TERM cb_cntl(ErlNifEnv* env, handle_t* handle, void* obj)
+{
+    printf("ok");
+    cntl_args_t* args = (cntl_args_t*)obj;
+    lcb_error_t err;
+
+    err = lcb_cntl(handle->instance, args->mode, args->cmd, &args->value);
+
+    if(err != LCB_SUCCESS) {
+        return return_lcb_error(env, err);
+    }
+
+    return enif_make_tuple2(env, A_OK(env), enif_make_int(env, args->value));
+}
+
 ERL_NIF_TERM return_lcb_error(ErlNifEnv* env, int const value) {
     switch (value) {
         case LCB_SUCCESS:

@@ -17,7 +17,7 @@
 -export([append/4, prepend/4]).
 %% retrieval operations
 -export([get_and_touch/3, get_and_lock/3, mget/2, get/2, unlock/3,
-         mget/3, getl/3, http/6, view/4, foldl/3, foldr/3, foreach/2]).
+         mget/3, getl/3, http/6, cntl/4, view/4, foldl/3, foldr/3, foreach/2]).
 %% removal operations
 -export([remove/2, flush/1, flush/2]).
 %% design doc opertations
@@ -255,6 +255,12 @@ arithmetic(PoolPid, Key, OffSet, Exp, Create, Initial) ->
 remove(PoolPid, Key) ->
     execute(PoolPid, {remove, Key, 0}).
 
+%% @doc cntl set lcb configuration
+%% Mode : 0 = GET, 1 = SET
+-spec cntl(pid(), integer(), integer(), integer()) -> ok | {error, _}.
+cntl(PoolPid, Mode, Cmd, Value) ->
+    execute(PoolPid, {cntl, Mode, Cmd, Value}).
+
 %% @doc flush all documents from the bucket
 %% Instance libcouchbase Instance to use
 %% BucketName name of the bucket to flush
@@ -431,4 +437,3 @@ query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
 view_error(Error) -> list_to_atom(binary_to_list(Error)).
-

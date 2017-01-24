@@ -114,6 +114,12 @@ handle_call({http, Path, Body, ContentType, Method, Chunked}, _From, State) ->
         {error, _} = E -> {false, E}
     end,
     {reply, Reply, State#instance{connected = Connected}};
+handle_call({cntl, Mode, Cmd, Value}, _From, State) ->
+    {Connected, Reply} = case connect(State) of
+        ok -> {true, cntl(Mode, Cmd, Value, State)};
+        {error, _} = E -> {false, E}
+    end,
+    {reply, Reply, State#instance{connected = Connected}};
 handle_call(bucketname, _From, State = #instance{bucketname = BucketName}) ->
     {reply, {ok, BucketName}, State};
 handle_call(_Request, _From, State) ->
@@ -244,6 +250,12 @@ http(Path, Body, ContentType, Method, Chunked, #instance{handle = Handle}) ->
         Reply -> Reply
     end.
 
+cntl(Mode, Cmd, Value, #instance{handle = Handle}) ->
+    ok = cberl_nif:control(Handle, op(cntl), [Mode, Cmd, Value]),
+    receive
+        Reply -> Reply
+    end.    
+
 -spec operation_value(operation_type()) -> integer().
 operation_value(add) -> ?'CBE_ADD';
 operation_value(replace) -> ?'CBE_REPLACE';
@@ -259,7 +271,8 @@ op(unlock) -> ?'CMD_UNLOCK';
 op(mtouch) -> ?'CMD_MTOUCH';
 op(arithmetic) -> ?'CMD_ARITHMETIC';
 op(remove) -> ?'CMD_REMOVE';
-op(http) -> ?'CMD_HTTP'.
+op(http) -> ?'CMD_HTTP';
+op(cntl) -> ?'CMD_CNTL'.
 
 -spec canonical_bucket_name(string()) -> string().
 canonical_bucket_name(Name) ->
