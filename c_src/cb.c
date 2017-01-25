@@ -51,7 +51,8 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     struct lcb_create_io_ops_st io_opts;
 
     io_opts.version = 0;
-    io_opts.v.v0.type = LCB_IO_OPS_DEFAULT;
+    //io_opts.v.v0.type = LCB_IO_OPS_DEFAULT;
+    io_opts.v.v0.type = LCB_IO_OPS_LIBEVENT;
     io_opts.v.v0.cookie = NULL;
 
     memset(&create_options, 0, sizeof(create_options));
