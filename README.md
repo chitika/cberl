@@ -1,7 +1,7 @@
 CBERL
 ====
 
-[![Build Status](https://travis-ci.org/chitika/cberl.svg?branch=master)](https://travis-ci.org/chitika/cberl)
+[![Build Status](https://travis-ci.org/wcummings/cberl.svg?branch=master)](https://travis-ci.org/wcummings/cberl)
 
 NIF based Erlang bindings for couchbase based on libcouchbase. 
 CBERL is at early stage of development, it only supports very basic functionality. Please submit bugs and patches if you find any.
@@ -31,7 +31,7 @@ For installing libcouchbase on other systems visit http://www.couchbase.com/deve
 Then:
 
 ```shell
-git clone git@github.com:chitika/cberl.git
+git clone git@github.com:wcummings/cberl.git
 cd cberl
 # assuming you have rebar in your path
 rebar get-deps compile
@@ -53,7 +53,7 @@ cberl:start_link(cberl_default, 5).
 {ok, <0.33.0>}
 % Poolname, Key, Expire - 0 for infinity, Value
 cberl:set(cberl_default, <<"fkey">>, 0, <<"cberl">>).
-ok
+{ok,CAS}
 cberl:get(cberl_default, <<"fkey">>).
 {<<"fkey">>, ReturnedCasValue, <<"cberl">>}
 ```
