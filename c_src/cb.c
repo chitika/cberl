@@ -27,8 +27,14 @@ void *cb_connect_args(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     args->bucket = (char *) malloc(arg_length + 1);
     if (!enif_get_string(env, argv[3], args->bucket, arg_length + 1, ERL_NIF_LATIN1)) goto error4;
 
+    if (!enif_get_list_length(env, argv[4], &arg_length)) goto error4;
+    args->cert = (char *) malloc(arg_length + 1);
+    if (!enif_get_string(env, argv[4], args->cert, arg_length + 1, ERL_NIF_LATIN1)) goto error5;
+
     return (void*)args;
 
+    error5:
+    free(args->cert);
     error4:
     free(args->bucket);
     error3:
@@ -48,26 +54,20 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     connect_args_t* args = (connect_args_t*)obj;
 
     lcb_error_t err;
-    struct lcb_create_st create_options;
-    struct lcb_create_io_ops_st io_opts;
+    struct lcb_create_st create_options = { 0 };
+    size_t l = 25 + strlen(args->host) + strlen(args->bucket) + strlen(args->cert);
+    char connection_str[l];
 
-    io_opts.version = 0;
-    io_opts.v.v0.type = LCB_IO_OPS_DEFAULT;
-    io_opts.v.v0.cookie = NULL;
-
-    memset(&create_options, 0, sizeof(create_options));
-    err = lcb_create_io_ops(&create_options.v.v0.io, &io_opts);
-    if (err != LCB_SUCCESS) {
-      printf("failed create io ops\n");
-      fprintf(stderr, "Failed to create IO instance: %s\n",
-          lcb_strerror(NULL, err));
-      return return_lcb_error(env, err);
+    if(strcmp(args->cert, ""))
+    {
+        snprintf(connection_str, l, "couchbases://%s/%s?certpath=%s", args->host, args->bucket, args->cert);
+    }else{
+        snprintf(connection_str, l, "couchbase://%s/%s", args->host, args->bucket);
     }
 
-    create_options.v.v0.host = args->host;
-    create_options.v.v0.user = args->user;
-    create_options.v.v0.bucket = args->bucket;
-    create_options.v.v0.passwd = args->pass;
+    create_options.version = 3;
+    create_options.v.v3.connstr = connection_str;
+    create_options.v.v3.passwd = args->pass;
 
     err = lcb_create(&(handle->instance), &create_options);
 
@@ -75,6 +75,7 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     free(args->user);
     free(args->pass);
     free(args->bucket);
+    free(args->cert);
 
     if (err != LCB_SUCCESS) {
         return enif_make_tuple2(env, enif_make_atom(env, "error"),

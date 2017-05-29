@@ -9,6 +9,7 @@ typedef struct connect_args {
     char* user;
     char* pass;
     char* bucket;
+    char* cert;
 } connect_args_t;
 
 typedef struct store_args {

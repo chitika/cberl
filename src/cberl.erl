@@ -6,7 +6,7 @@
 -vsn("1.0.5").
 -include("cberl.hrl").
 
--export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
+-export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7, start_link/8]).
 -export([stop/1]).
 %% store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5, store/7]).
@@ -50,19 +50,24 @@ start_link(PoolName, NumCon, Host, Username, Password) ->
 %% @end
 %% @equiv start_link(PoolName, NumCon, Host, Username, Password, cberl_transcoder)
 start_link(PoolName, NumCon, Host, Username, Password, BucketName) ->
-    start_link(PoolName, NumCon, Host, Username, Password, BucketName, cberl_transcoder).
+    start_link(PoolName, NumCon, Host, Username, Password, BucketName, "", cberl_transcoder).
 
--spec start_link(atom(), integer(), string(), string(), string(), string(), atom()) -> {ok, pid()} | {error, _}.
-start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) ->
+start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate) ->
+    start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate, cberl_transcoder).
+
+
+-spec start_link(atom(), integer(), string(), string(), string(), string(), string(), atom()) -> {ok, pid()} | {error, _}.
+start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate, Transcoder) ->
     SizeArgs = [{size, NumCon},
                 {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
     WorkerArgs = [{host, Host},
-		  {username, Username},
-		  {password, Password},
-		  {bucketname, BucketName},
-		  {transcoder, Transcoder}],
+                  {username, Username},
+                  {password, Password},
+                  {bucketname, BucketName},
+                  {transcoder, Transcoder},
+                  {cert, Certificate}],
     poolboy:start_link(PoolArgs, WorkerArgs).
 
 stop(PoolPid) ->
