@@ -21,6 +21,13 @@ struct libcouchbase_callback_m {
     struct libcouchbase_callback** ret;
 };
 
+struct libcouchbase_callback_n1ql {
+	int currrow;
+	int size;
+	struct libcouchbase_callback** ret;
+	struct libcouchbase_callback* meta;
+};
+
 void get_callback(lcb_t instance,
                   const void *cookie,
                   lcb_error_t error,
@@ -57,5 +64,9 @@ void http_callback(lcb_http_request_t request,
                    const void* cookie,
                    lcb_error_t error,
                    const lcb_http_resp_t *resp);
+
+void n1ql_callback(lcb_t instance,
+					int cbtype,
+					const lcb_RESPN1QL *resp);
 
 #endif
