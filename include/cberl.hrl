@@ -22,7 +22,7 @@
                    connected :: true | false,
                    opts :: list()}).
 
--type key() :: string().
+-type key() :: binary().
 -type value() :: string() | list() | integer() | binary().
 -type operation_type() :: add | replace | set | append | prepend.
 -type instance() :: #instance{}.

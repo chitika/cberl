@@ -44,18 +44,18 @@ start_link(Args) ->
 %% @end
 %%--------------------------------------------------------------------
 init([{host, Host}, {username, Username}, {password, Password},
-      {bucketname, BucketName}, {transcoder, Transcoder}]) ->
+      {bucketname, BucketName}, {transcoder, Transcoder}, {cert, Certificate}]) ->
     process_flag(trap_exit, true),
     {ok, Handle} = cberl_nif:new(),
     State = #instance{handle = Handle,
                       transcoder = Transcoder,
                       bucketname = canonical_bucket_name(BucketName),
-                      opts = [Host, Username, Password, BucketName],
+                      opts = [Host, Username, Password, BucketName, Certificate],
                       connected = false},
     State2 = case connect(State) of
-        ok -> State#instance{connected = true};
-        {error, _} -> State#instance{connected = false}
-    end,
+                 ok -> State#instance{connected = true};
+                 {error, _} -> State#instance{connected = false}
+             end,
     {ok, State2}.
 
 %%--------------------------------------------------------------------
