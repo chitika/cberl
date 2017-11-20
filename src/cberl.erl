@@ -6,7 +6,7 @@
 -vsn("1.0.5").
 -include("cberl.hrl").
 
--export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7]).
+-export([start_link/2, start_link/3, start_link/5, start_link/6, start_link/7, start_link/8]).
 -export([stop/1]).
 %% store operations
 -export([add/4, add/5, replace/4, replace/5, set/4, set/5, store/7]).
@@ -26,17 +26,17 @@
 -deprecated({append, 4}).
 -deprecated({prepend, 4}).
 
-%% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "", "")
+%% @equiv start_link(PoolName, NumCon, "localhost:8091", "", "")
 start_link(PoolName, NumCon) ->
-    start_link(PoolName, NumCon, "localhost:8091", "", "", "").
+    start_link(PoolName, NumCon, "localhost:8091", "", "").
 
-%% @equiv start_link(PoolName, NumCon, Host, "", "", "")
+%% @equiv start_link(PoolName, NumCon, Host, "", "")
 start_link(PoolName, NumCon, Host) ->
-    start_link(PoolName, NumCon, Host, "", "", "").
+    start_link(PoolName, NumCon, Host, "", "").
 
-%% @equiv start_link(PoolName, NumCon, Host, Username, Password, "")
+%% @equiv start_link(PoolName, NumCon, Host, Username, Password, "default")
 start_link(PoolName, NumCon, Host, Username, Password) ->
-    start_link(PoolName, NumCon, Host, Username, Password, "").
+    start_link(PoolName, NumCon, Host, Username, Password, "default").
 
 %% @doc Create an instance of libcouchbase
 %% hosts A list of hosts:port separated by ';' to the
@@ -50,19 +50,24 @@ start_link(PoolName, NumCon, Host, Username, Password) ->
 %% @end
 %% @equiv start_link(PoolName, NumCon, Host, Username, Password, cberl_transcoder)
 start_link(PoolName, NumCon, Host, Username, Password, BucketName) ->
-    start_link(PoolName, NumCon, Host, Username, Password, BucketName, cberl_transcoder).
+    start_link(PoolName, NumCon, Host, Username, Password, BucketName, "", cberl_transcoder).
 
--spec start_link(atom(), integer(), string(), string(), string(), string(), atom()) -> {ok, pid()} | {error, _}.
-start_link(PoolName, NumCon, Host, Username, Password, BucketName, Transcoder) ->
+start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate) ->
+    start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate, cberl_transcoder).
+
+
+-spec start_link(atom(), integer(), string(), string(), string(), string(), string(), atom()) -> {ok, pid()} | {error, _}.
+start_link(PoolName, NumCon, Host, Username, Password, BucketName, Certificate, Transcoder) ->
     SizeArgs = [{size, NumCon},
                 {max_overflow, 0}],
     PoolArgs = [{name, {local, PoolName}},
                 {worker_module, cberl_worker}] ++ SizeArgs,
-    WorkerArgs = [{host, Host},
-		  {username, Username},
-		  {password, Password},
-		  {bucketname, BucketName},
-		  {transcoder, Transcoder}],
+    WorkerArgs = [{host, list_convert(Host)},
+                  {username, list_convert(Username)},
+                  {password, list_convert(Password)},
+                  {bucketname, list_convert(BucketName)},
+                  {transcoder, list_convert(Transcoder)},
+                  {cert, Certificate}],
     poolboy:start_link(PoolArgs, WorkerArgs).
 
 stop(PoolPid) ->
@@ -73,32 +78,32 @@ stop(PoolPid) ->
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @equiv add(PoolPid, Key, Exp, Value, standard)
--spec add(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec add(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value) ->
     add(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0)
--spec add(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec add(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 add(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, add, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv replace(PoolPid, Key, Exp, Value, standard)
--spec replace(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec replace(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value) ->
     replace(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, replace, "", Key, Value, Exp)
--spec replace(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec replace(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 replace(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, replace, Key, Value, TranscoderOpts, Exp, 0).
 
 %% @equiv set(PoolPid, Key, Exp, Value, standard)
--spec set(pid(), key(), integer(), value()) -> ok | {error, _}.
+-spec set(pid(), key(), integer(), value()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value) ->
     set(PoolPid, Key, Exp, Value, standard).
 
 %% @equiv store(PoolPid, set, "", Key, Value, Exp)
--spec set(pid(), key(), integer(), value(), atom()) -> ok | {error, _}.
+-spec set(pid(), key(), integer(), value(), atom()) -> {ok,integer()} | {error, _}.
 set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
     store(PoolPid, set, Key, Value, TranscoderOpts, Exp, 0).
 
@@ -113,7 +118,7 @@ set(PoolPid, Key, Exp, Value, TranscoderOpts) ->
 append(PoolPid, _Cas, Key, Value) ->
     append(PoolPid, Key, Value).
 
--spec append(pid(), key(), value()) -> ok | {error, _}.
+-spec append(pid(), key(), value()) -> {ok,integer()} | {error, _}.
 append(PoolPid, Key, Value) ->
     store(PoolPid, append, Key, Value, none, 0, 0).
 
@@ -124,7 +129,7 @@ append(PoolPid, Key, Value) ->
 prepend(PoolPid, _Cas, Key, Value) ->
     prepend(PoolPid, Key, Value).
 
--spec prepend(pid(), key(), value()) -> ok | {error, _}.
+-spec prepend(pid(), key(), value()) -> {ok,integer()} | {error, _}.
 prepend(PoolPid, Key, Value) ->
     store(PoolPid, prepend, Key, Value, none, 0, 0).
 
@@ -212,7 +217,7 @@ unlock(PoolPid, Key, Cas) ->
 %%     pass 0 for infinity
 %% CAS
 -spec store(pid(), operation_type(), key(), value(), atom(),
-            integer(), integer()) -> ok | {error, _}.
+            integer(), integer()) -> {ok,integer()} | {error, _}.
 store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
     execute(PoolPid, {store, Op, Key, Value,
                        TranscoderOpts, Exp, Cas}).
@@ -223,7 +228,7 @@ store(PoolPid, Op, Key, Value, TranscoderOpts, Exp, Cas) ->
 %% Key the key to get
 %% Exp When the object should expire
 %%      pass a negative number for infinity
--spec mget(pid(), [key()], integer()) -> list().
+-spec mget(pid(), [key()], integer()) -> list() | {error, _}.
 mget(PoolPid, Keys, Exp) ->
     execute(PoolPid, {mget, Keys, Exp, 0}).
 
@@ -232,7 +237,7 @@ mget(PoolPid, Keys, Exp) ->
 %%  HashKey the key to use for hashing
 %%  Key the key to get
 %%  Exp When the lock should expire
--spec getl(pid(), key(), integer()) -> list().
+-spec getl(pid(), key(), integer()) -> list() | {error, _}.
 getl(PoolPid, Key, Exp) ->
     execute(PoolPid, {mget, [Key], Exp, 1}).
 
@@ -297,7 +302,7 @@ handle_flush_result(PoolPid, FlushMarker, Result={ok, 201, _}) ->
 %% Method HTTP method
 %% Type Couchbase request type
 -spec http(pid(), string(), string(), string(), http_method(), http_type())
-	  -> {ok, binary()} | {error, _}.
+	  -> {ok, integer(), binary()} | {error, _}.
 http(PoolPid, Path, Body, ContentType, Method, Type) ->
     execute(PoolPid, {http, Path, Body, ContentType, http_method(Method), http_type(Type)}).
 
@@ -374,8 +379,9 @@ remove_design_doc(PoolPid, DocName) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 execute(PoolPid, Cmd) ->
+    Timeout = application:get_env(cberl, http_timeout, 60000),
     poolboy:transaction(PoolPid, fun(Worker) ->
-            gen_server:call(Worker, Cmd)
+            gen_server:call(Worker, Cmd, Timeout)
        end).
 
 http_type(view) -> 0;
@@ -412,7 +418,7 @@ decode_update_design_doc_resp({ok, _Http_Code, Resp}) ->
 query_arg({descending, true}) -> "descending=true";
 query_arg({descending, false}) -> "descending=false";
 
-query_arg({endkey, V}) when is_list(V) -> string:join(["endkey", V], "=");
+query_arg({endkey, V}) -> string:join(["endkey", binary_to_list(iolist_to_binary(jiffy:encode(V)))], "=");
 
 query_arg({endkey_docid, V}) when is_list(V) -> string:join(["endkey_docid", V], "=");
 
@@ -445,9 +451,15 @@ query_arg({stale, false}) -> "stale=false";
 query_arg({stale, ok}) -> "stale=ok";
 query_arg({stale, update_after}) -> "stale=update_after";
 
-query_arg({startkey, V}) when is_list(V) -> string:join(["startkey", V], "=");
+query_arg({startkey, V}) -> string:join(["startkey", binary_to_list(iolist_to_binary(jiffy:encode(V)))], "=");
 
 query_arg({startkey_docid, V}) when is_list(V) -> string:join(["startkey_docid", V], "=").
 
 view_error(Error) -> list_to_atom(binary_to_list(Error)).
 
+list_convert(Dato) when is_list(Dato) -> Dato;
+list_convert(Dato) when is_integer(Dato) -> integer_to_list(Dato);
+list_convert(Dato) when is_tuple(Dato) -> tuple_to_list(Dato);
+list_convert(Dato) when is_atom(Dato) -> atom_to_list(Dato);
+list_convert(Dato) when is_binary(Dato) -> binary_to_list(Dato);
+list_convert(_) -> "".
