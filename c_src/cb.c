@@ -58,16 +58,16 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     size_t l = 25 + strlen(args->host) + strlen(args->bucket) + strlen(args->cert);
     char connection_str[l];
 
-    if(strcmp(args->cert, ""))
-    {
+    if(strcmp(args->cert, "") != 0) {
         snprintf(connection_str, l, "couchbases://%s/%s?certpath=%s", args->host, args->bucket, args->cert);
-    }else{
+    } else {
         snprintf(connection_str, l, "couchbase://%s/%s", args->host, args->bucket);
     }
 
     create_options.version = 3;
     create_options.v.v3.connstr = connection_str;
     create_options.v.v3.passwd = args->pass;
+    create_options.v.v3.username = args->user;
 
     err = lcb_create(&(handle->instance), &create_options);
 
@@ -78,8 +78,8 @@ ERL_NIF_TERM cb_connect(ErlNifEnv* env, handle_t* handle, void* obj)
     free(args->cert);
 
     if (err != LCB_SUCCESS) {
-        return enif_make_tuple2(env, enif_make_atom(env, "error"),
-                enif_make_string(env, lcb_strerror(NULL, err), ERL_NIF_LATIN1));
+      return enif_make_tuple2(env, enif_make_atom(env, "error"),
+				enif_make_string(env, lcb_strerror(NULL, err), ERL_NIF_LATIN1));
     }
 
     (void)lcb_set_get_callback(handle->instance, get_callback);
