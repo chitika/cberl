@@ -735,7 +735,7 @@ ERL_NIF_TERM cb_n1ql(ErlNifEnv* env, handle_t* handle, void* obj)
 
 	cb.currrow = 0;
 	cb.size = 5;
-	cb.ret = malloc(sizeof(struct libcouchbase_callback*) * 1);
+	cb.ret = malloc(sizeof(struct libcouchbase_callback*) * cb.size);
 	cb.meta = malloc(sizeof(struct libcouchbase_callback*) * 1);
 	cmd.callback = n1ql_callback;
 
