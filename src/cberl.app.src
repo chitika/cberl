@@ -1,6 +1,6 @@
 {application, cberl,
  [
-  {description, ""},
+  {description, "Couchbase erlang client(Erlang wrapper for libcouchbase)"},
   {vsn, "1.0.6"},
   {registered, []},
   {applications, [
